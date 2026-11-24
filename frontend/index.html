@@ -25,6 +25,7 @@
       background: var(--bg);
       color: var(--text);
       line-height: 1.45;
+      overflow-x: hidden;
     }
     header {
       background: var(--primary);
@@ -74,7 +75,7 @@
     .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
     .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
     label { font-size: 0.88rem; color: var(--muted); display: block; margin-bottom: 4px; }
-    input, select, textarea, button { font-family: inherit; font-size: 0.92rem; }
+    input, select, textarea, button { font-family: inherit; font-size: 0.92rem; max-width: 100%; }
     input, select, textarea {
       width: 100%;
       padding: 8px 10px;
@@ -113,6 +114,7 @@
       margin-bottom: 12px;
       font-size: 0.92rem;
       display: none;
+      word-break: break-word;
     }
     .msg.ok { display: block; background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
     .msg.err { display: block; background: var(--danger-bg); color: var(--danger); border: 1px solid #fecaca; }
@@ -146,11 +148,12 @@
       background: #e2e8f0;
       color: #334155;
       margin-right: 4px;
+      margin-bottom: 3px;
     }
     .etiket.uyari { background: #fde68a; color: #78350f; font-weight: 600; }
     table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
     th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--border); }
-    .table-wrap { overflow-x: auto; }
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
     .alerjen-liste { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px; margin: 10px 0; }
     .alerjen-kutu {
       display: flex;
@@ -163,6 +166,19 @@
       cursor: pointer;
     }
     .alerjen-kutu input { width: auto; margin: 0; }
+    @media (max-width: 450px) {
+      header { padding: 10px 12px; }
+      header h1 { font-size: 1rem; width: 100%; }
+      .user-bar { width: 100%; font-size: 0.82rem; gap: 6px; }
+      nav { padding: 6px 8px; gap: 4px; }
+      nav button { padding: 6px 8px; font-size: 0.8rem; }
+      main { margin: 10px auto; padding: 0 8px 24px; }
+      .card { padding: 11px; border-radius: 10px; }
+      .grid-2, .alerjen-liste { grid-template-columns: 1fr; }
+      th, td { padding: 6px; font-size: 0.8rem; }
+      button.btn, button.btn-secondary, button.btn-danger { width: 100%; }
+      .user-bar button { width: auto; }
+    }
   </style>
 </head>
 <body>
@@ -702,59 +718,4 @@
             <td>${Number(h.tutar).toFixed(2)} TL</td>
             <td>${h.aciklama || ""}</td>
           </tr>
-        `).join("") || '<tr><td colspan="4">Hareket yok.</td></tr>';
-      } catch (e) {
-        mesajGoster(e.message, "err");
-      }
-    }
-
-    async function degerlendirmeGonder() {
-      const menu_id = parseInt(document.getElementById("degMenuId").value, 10);
-      const puan = parseInt(document.getElementById("degPuan").value, 10);
-      const yorum = document.getElementById("degYorum").value;
-      try {
-        const res = await apiIstek("/degerlendirmeler", {
-          method: "POST",
-          body: JSON.stringify({ menu_id, puan, yorum })
-        });
-        mesajGoster(res.mesaj || "Degerlendirme kaydedildi.", "ok");
-      } catch (e) {
-        mesajGoster(e.message, "err");
-      }
-    }
-
-    async function raporGetir() {
-      const tarih = document.getElementById("raporTarih").value;
-      const q = tarih ? `?tarih=${encodeURIComponent(tarih)}` : "";
-      try {
-        const res = await apiIstek("/yonetim/rapor" + q);
-        document.getElementById("raporGovde").innerHTML = (res.rapor || []).map(r => `
-          <tr>
-            <td>${r.tarih}</td>
-            <td>${r.yemekhane}</td>
-            <td>${r.ogun}</td>
-            <td>%${r.doluluk_yuzde} (${r.rezerve}/${r.kapasite})</td>
-            <td>${r.ortalama_puan ?? "-"}</td>
-          </tr>
-        `).join("") || '<tr><td colspan="5">Kayit yok.</td></tr>';
-      } catch (e) {
-        mesajGoster(e.message, "err");
-      }
-    }
-
-    (async function baslat() {
-      const bugun = new Date().toISOString().slice(0, 10);
-      document.getElementById("gununTarih").value = bugun;
-      document.getElementById("haftalikTarih").value = bugun;
-      document.getElementById("raporTarih").value = bugun;
-      try {
-        await tanimlariYukle();
-        await oturumKontrol();
-        await menuleriYukle("gunun");
-      } catch (e) {
-        mesajGoster(e.message, "err");
-      }
-    })();
-  </script>
-</body>
-</html>
+        `).join("") || '<tr><td colspan="4">Hareket yok.</td>
