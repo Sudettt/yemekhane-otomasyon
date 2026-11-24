@@ -32,6 +32,21 @@ def _gun_sonuna_kadar_saniye(tarih_str=None):
     return max(60, kalan)
 
 
+def _kullanici_alerjen_idler(kullanici_id):
+    if not kullanici_id:
+        return []
+    conn = okuma_baglantisi()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT alerjen_id FROM kullanici_alerjenleri WHERE kullanici_id = %s ORDER BY alerjen_id",
+                (int(kullanici_id),),
+            )
+            return [int(r["alerjen_id"]) for r in cur.fetchall()]
+    finally:
+        conn.close()
+
+
 def _kullanici_sozlugu(satir):
     if not satir:
         return None
@@ -72,7 +87,6 @@ def oturum_kullanicisi():
     ham = redis_istemci.get(anahtar)
     if not ham:
         return None
-    # Her istekte oturum suresini (30 dk) yenile
     redis_istemci.expire(anahtar, OTURUM_SURESI)
     kid = json.loads(ham).get("kullanici_id")
     if not kid:
@@ -85,6 +99,7 @@ def oturum_kullanicisi():
         if not bilgi:
             return None
         bilgi.pop("_sifre_hash", None)
+        bilgi["alerjen_idler"] = _kullanici_alerjen_idler(bilgi["id"])
         return bilgi
     finally:
         conn.close()
@@ -140,6 +155,7 @@ def giris():
     if not bilgi or not _sifre_dogrula(sifre, bilgi.get("_sifre_hash")):
         return jsonify({"hata": "E-posta veya sifre hatali."}), 401
     bilgi.pop("_sifre_hash", None)
+    bilgi["alerjen_idler"] = _kullanici_alerjen_idler(bilgi["id"])
     token = uuid.uuid4().hex
     redis_istemci.setex(f"oturum:{token}", OTURUM_SURESI, json.dumps({"kullanici_id": bilgi["id"]}))
     app.logger.info(f"REDIS OTURUM OLUSTURULDU: oturum:{token} (TTL={OTURUM_SURESI}s)")
@@ -192,6 +208,44 @@ def ben():
     if hata:
         return hata
     return jsonify({"kullanici": k}), 200
+
+
+@app.get("/api/profil/alerjenler")
+def profil_alerjen_getir():
+    k, hata = giris_gerekli()
+    if hata:
+        return hata
+    return jsonify({"alerjen_idler": k.get("alerjen_idler", [])}), 200
+
+
+@app.put("/api/profil/alerjenler")
+def profil_alerjen_guncelle():
+    k, hata = giris_gerekli()
+    if hata:
+        return hata
+    g = request.get_json(silent=True) or {}
+    ham_idler = g.get("alerjen_idler") or []
+    try:
+        idler = sorted({int(x) for x in ham_idler if x is not None})
+    except (ValueError, TypeError):
+        return jsonify({"hata": "Gecersiz alerjen listesi."}), 400
+
+    conn = yazma_baglantisi()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM kullanici_alerjenleri WHERE kullanici_id = %s", (k["id"],))
+            for aid in idler:
+                cur.execute(
+                    "INSERT INTO kullanici_alerjenleri (kullanici_id, alerjen_id) VALUES (%s, %s)",
+                    (k["id"], aid),
+                )
+        conn.commit()
+        return jsonify({"mesaj": "Alerjen tercihleriniz guncellendi.", "alerjen_idler": idler}), 200
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"hata": str(e)}), 400
+    finally:
+        conn.close()
 
 
 @app.get("/api/tanimlar")
@@ -255,6 +309,11 @@ def _tek_menu_detay_getir(cur, menu_id):
         (menu_id,),
     )
     ym_list = cur.fetchall()
+    ogun_ad_kucuk = (m["ogun"] or "").lower()
+    yarim_porsiyon_uygun = ("kahvalt" not in ogun_ad_kucuk) and ("kahvalti" not in ogun_ad_kucuk)
+    ogr_tam = float(m["ogrenci_fiyati"])
+    per_tam = float(m["personel_fiyati"])
+
     return {
         "menu_id": m["menu_id"],
         "tarih": str(m["tarih"]),
@@ -262,10 +321,13 @@ def _tek_menu_detay_getir(cur, menu_id):
         "yemekhane": m["yemekhane"],
         "ogun_id": m["ogun_id"],
         "ogun": m["ogun"],
+        "yarim_porsiyon_uygun": yarim_porsiyon_uygun,
         "kapasite": int(m["kapasite"]),
         "bos_yer": max(0, int(m["kapasite"]) - int(m["aktif_rez"] or 0)),
-        "ogrenci_fiyati": float(m["ogrenci_fiyati"]),
-        "personel_fiyati": float(m["personel_fiyati"]),
+        "ogrenci_fiyati": ogr_tam,
+        "personel_fiyati": per_tam,
+        "ogrenci_yarim_fiyat": round(ogr_tam * 0.60, 2) if yarim_porsiyon_uygun else None,
+        "personel_yarim_fiyat": round(per_tam * 0.60, 2) if yarim_porsiyon_uygun else None,
         "toplam_kalori": sum(int(y["kalori"] or 0) for y in ym_list),
         "ortalama_puan": float(m["ort_puan"]) if m["ort_puan"] is not None else None,
         "oy_sayisi": int(m["oy_sayisi"] or 0),
@@ -283,6 +345,7 @@ def _tek_menu_detay_getir(cur, menu_id):
                 "kalori": int(y["kalori"] or 0),
                 "vejetaryen": bool(y["vejetaryen"]),
                 "alerjenler": y["alerjenler"] or "",
+                "alerjen_idler": [int(x) for x in (y["alerjen_idler"] or "").split(",") if x],
             }
             for y in ym_list
         ],
@@ -297,13 +360,31 @@ def _filtre_uygun_mu(item, haric_alerjen, vejetaryen):
     return True
 
 
-def _temiz_menu_cikti(item):
+def _temiz_menu_cikti(item, kullanici_alerjen_idler=None):
     kopya = {k: v for k, v in item.items() if not k.startswith("_")}
+    k_set = set(kullanici_alerjen_idler or [])
+    eslesen_yemekler = []
+    yemek_listesi = []
+    for y in kopya.get("yemekler", []):
+        y_kopya = dict(y)
+        y_set = set(y.get("alerjen_idler") or [])
+        eslesen = sorted(k_set.intersection(y_set))
+        y_kopya["alerjen_uyarisi"] = bool(eslesen)
+        y_kopya["eslesen_alerjen_idler"] = eslesen
+        if eslesen:
+            eslesen_yemekler.append(y["ad"])
+        yemek_listesi.append(y_kopya)
+    kopya["yemekler"] = yemek_listesi
+    kopya["kullanici_alerjen_uyarisi"] = bool(eslesen_yemekler)
+    kopya["uyari_yemekleri"] = eslesen_yemekler
     return kopya
 
 
 @app.get("/api/menuler")
 def menuler():
+    kullanici = oturum_kullanicisi()
+    k_alerjen_idler = kullanici.get("alerjen_idler", []) if kullanici else []
+
     tarih = (request.args.get("tarih") or "").strip()
     yemekhane_id = (request.args.get("yemekhane_id") or "").strip()
     ogun_id = (request.args.get("ogun_id") or "").strip()
@@ -342,9 +423,9 @@ def menuler():
                         ttl = _gun_sonuna_kadar_saniye(row["tarih"])
                         redis_istemci.setex(key, ttl, json.dumps(detay))
                 if detay and _filtre_uygun_mu(detay, haric_alerjen, vejetaryen):
-                    out.append(_temiz_menu_cikti(detay))
+                    out.append(_temiz_menu_cikti(detay, k_alerjen_idler))
 
-        return jsonify({"menuler": out}), 200
+        return jsonify({"menuler": out, "kullanici_alerjen_idler": k_alerjen_idler}), 200
     finally:
         conn.close()
 
@@ -354,15 +435,20 @@ def rezervasyon_olustur():
     k, hata = giris_gerekli()
     if hata:
         return hata
-    menu_id = (request.get_json(silent=True) or {}).get("menu_id")
+    g = request.get_json(silent=True) or {}
+    menu_id = g.get("menu_id")
+    porsiyon = (g.get("porsiyon") or "tam").strip().lower()
     if not menu_id:
         return jsonify({"hata": "menu_id zorunludur."}), 400
+    if porsiyon not in ("tam", "yarim"):
+        return jsonify({"hata": "Gecersiz porsiyon secimi."}), 400
+
     conn = yazma_baglantisi()
     try:
         with conn.cursor() as cur:
             cur.execute("SELECT yemekhane_id, tarih, ogun_id FROM menuler WHERE id = %s LIMIT 1", (int(menu_id),))
             m_info = cur.fetchone()
-            cur.callproc("sp_rezervasyon_yap", [k["id"], int(menu_id)])
+            cur.callproc("sp_rezervasyon_yap", [k["id"], int(menu_id), porsiyon])
             sonuc = cur.fetchone()
             while cur.nextset():
                 pass
@@ -386,7 +472,7 @@ def rezervasyonlarim():
     try:
         with conn.cursor() as cur:
             cur.execute(
-                "SELECT r.id AS rezervasyon_id, r.menu_id, r.ucret, r.durum, r.olusturma, "
+                "SELECT r.id AS rezervasyon_id, r.menu_id, r.porsiyon, r.ucret, r.durum, r.olusturma, "
                 "m.tarih, yh.ad AS yemekhane, og.ad AS ogun "
                 "FROM rezervasyonlar r "
                 "JOIN menuler m ON m.id = r.menu_id "
@@ -399,6 +485,7 @@ def rezervasyonlarim():
             for r in rows:
                 r["tarih"] = str(r["tarih"])
                 r["olusturma"] = str(r["olusturma"])
+                r["porsiyon"] = r.get("porsiyon") or "tam"
                 r["ucret"] = float(r["ucret"])
         return jsonify({"rezervasyonlar": rows}), 200
     finally:

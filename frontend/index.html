@@ -1,550 +1,759 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Yemekhane Otomasyonu</title>
-  <link rel="stylesheet" href="/css/temel.css">
+  <style>
+    :root {
+      --bg: #f4f6f9;
+      --card: #ffffff;
+      --text: #1e293b;
+      --muted: #64748b;
+      --primary: #0f766e;
+      --primary-dark: #115e59;
+      --danger: #b91c1c;
+      --danger-bg: #fef2f2;
+      --warn-bg: #fffbeb;
+      --warn-border: #f59e0b;
+      --border: #e2e8f0;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.45;
+    }
+    header {
+      background: var(--primary);
+      color: #fff;
+      padding: 14px 16px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+    }
+    header h1 { margin: 0; font-size: 1.15rem; }
+    .user-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 0.9rem; }
+    nav {
+      background: #fff;
+      border-bottom: 1px solid var(--border);
+      padding: 8px 12px;
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+    }
+    nav button {
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--text);
+      padding: 7px 11px;
+      border-radius: 8px;
+      cursor: pointer;
+      white-space: nowrap;
+      font-size: 0.88rem;
+    }
+    nav button.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+    main { max-width: 1040px; margin: 16px auto; padding: 0 12px 32px; }
+    .panel { display: none; }
+    .panel.active { display: block; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 14px;
+    }
+    .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+    .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
+    label { font-size: 0.88rem; color: var(--muted); display: block; margin-bottom: 4px; }
+    input, select, textarea, button { font-family: inherit; font-size: 0.92rem; }
+    input, select, textarea {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #fff;
+    }
+    button.btn {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button.btn:hover { background: var(--primary-dark); }
+    button.btn-secondary {
+      background: #e2e8f0;
+      color: var(--text);
+      border: none;
+      padding: 7px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button.btn-danger {
+      background: var(--danger);
+      color: #fff;
+      border: none;
+      padding: 6px 11px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .msg {
+      padding: 10px 12px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      font-size: 0.92rem;
+      display: none;
+    }
+    .msg.ok { display: block; background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+    .msg.err { display: block; background: var(--danger-bg); color: var(--danger); border: 1px solid #fecaca; }
+    .alerjen-uyari {
+      background: var(--warn-bg);
+      border: 1px solid var(--warn-border);
+      color: #92400e;
+      padding: 8px 10px;
+      border-radius: 8px;
+      margin: 8px 0;
+      font-size: 0.88rem;
+      font-weight: 600;
+    }
+    .yemek-satir {
+      padding: 7px 8px;
+      border-bottom: 1px solid #f1f5f9;
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .yemek-satir.uyarili {
+      background: var(--warn-bg);
+      border-radius: 6px;
+    }
+    .etiket {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      background: #e2e8f0;
+      color: #334155;
+      margin-right: 4px;
+    }
+    .etiket.uyari { background: #fde68a; color: #78350f; font-weight: 600; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+    th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--border); }
+    .table-wrap { overflow-x: auto; }
+    .alerjen-liste { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px; margin: 10px 0; }
+    .alerjen-kutu {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--border);
+      padding: 8px 10px;
+      border-radius: 8px;
+      background: #fff;
+      cursor: pointer;
+    }
+    .alerjen-kutu input { width: auto; margin: 0; }
+  </style>
 </head>
 <body>
-  <header class="ust-bar">
-    <div class="kapsayici ust-bar-ic">
-      <div>
-        <strong>Yemekhane Otomasyonu</strong>
-        <span id="kullanici-ozeti" class="rozet">Misafir</span>
-      </div>
-      <div>
-        <span id="bakiye-ozeti" class="fiyat-vurgu">Bakiye: 0.00 TL</span>
-        <button type="button" id="cikis-dugme" class="dugme gizli" style="margin-left:0.6rem;min-height:36px;padding:0.35rem 0.8rem;">Cikis</button>
-      </div>
+  <header>
+    <h1>Yemekhane Otomasyonu</h1>
+    <div class="user-bar" id="kullaniciCubugu">
+      <span>Giris yapilmadi</span>
     </div>
   </header>
 
-  <main class="kapsayici">
-    <nav class="sekme-cubugu" aria-label="Ekranlar">
-      <button type="button" class="sekme-dugme aktif" data-ekran="giris">1. Giris / Kayit</button>
-      <button type="button" class="sekme-dugme" data-ekran="menu">2. Menu &amp; Rezervasyon</button>
-      <button type="button" class="sekme-dugme" data-ekran="rezervasyonlarim">3. Rezervasyonlarim</button>
-      <button type="button" class="sekme-dugme" data-ekran="bakiye">4. Bakiye &amp; Hareketler</button>
-      <button type="button" class="sekme-dugme" data-ekran="turnike">5. Turnike Gecis</button>
-      <button type="button" class="sekme-dugme" data-ekran="degerlendirme">6. Degerlendirme</button>
-      <button type="button" class="sekme-dugme" data-ekran="yonetim">7. Yonetim / Raporlar</button>
-    </nav>
+  <nav id="sekmeNav">
+    <button class="active" data-sekme="giris">1. Giris / Profil</button>
+    <button data-sekme="gunun">2. Gunun Menusu</button>
+    <button data-sekme="haftalik">3. Haftalik Menu & Rezervasyon</button>
+    <button data-sekme="rezervasyonlarim">4. Rezervasyonlarim</button>
+    <button data-sekme="bakiye">5. Bakiye</button>
+    <button data-sekme="degerlendirme">6. Degerlendirme</button>
+    <button data-sekme="yonetim">7. Yonetim</button>
+  </nav>
 
-    <div id="mesaj-kutusu" class="bildirim gizli" role="status"></div>
+  <main>
+    <div id="mesajKutu" class="msg"></div>
 
-    <section id="ekran-giris" class="ekran">
-      <div class="izgara-2">
-        <div class="kart">
+    <!-- 1. GIRIS VE PROFIL (ALERJEN SECIMI) -->
+    <section id="panel-giris" class="panel active">
+      <div class="grid-2">
+        <div class="card">
           <h2>Giris Yap</h2>
-          <form id="giris-form">
-            <div class="alan-grubu"><label for="giris-eposta">E-posta</label><input id="giris-eposta" type="email" value="ayse.demir@ogr.kampus.edu.tr" required></div>
-            <div class="alan-grubu"><label for="giris-sifre">Sifre</label><input id="giris-sifre" type="password" value="Yemek2026!" required></div>
-            <button type="submit" class="dugme">Giris Yap</button>
-          </form>
-          <p style="margin-top:0.85rem;font-size:var(--boyut-kucuk);" class="rozet">Ornek hesaplar: ayse.demir@ogr.kampus.edu.tr / leyla.arslan@kampus.edu.tr (Sifre: Yemek2026!)</p>
+          <label>E-posta</label>
+          <input type="email" id="girisEposta" placeholder="ornek@universite.edu.tr" />
+          <label style="margin-top:8px;">Sifre</label>
+          <input type="password" id="girisSifre" placeholder="Sifreniz" />
+          <div class="row" style="margin-top:12px;">
+            <button class="btn" onclick="girisYap()">Giris Yap</button>
+            <button class="btn-secondary" onclick="cikisYap()">Cikis Yap</button>
+          </div>
         </div>
-        <div class="kart">
-          <h2>Yeni Kayit</h2>
-          <form id="kayit-form">
-            <div class="alan-grubu"><label for="kayit-ad">Ad</label><input id="kayit-ad" type="text" required></div>
-            <div class="alan-grubu"><label for="kayit-soyad">Soyad</label><input id="kayit-soyad" type="text" required></div>
-            <div class="alan-grubu"><label for="kayit-eposta">E-posta</label><input id="kayit-eposta" type="email" required></div>
-            <div class="alan-grubu"><label for="kayit-sifre">Sifre</label><input id="kayit-sifre" type="password" required></div>
-            <div class="alan-grubu"><label for="kayit-rol">Rol</label><select id="kayit-rol"><option value="ogrenci">Ogrenci</option><option value="personel">Personel</option></select></div>
-            <div class="alan-grubu" id="kayit-ogr-grup"><label for="kayit-ogr-no">Ogrenci No</label><input id="kayit-ogr-no" type="text" placeholder="251229099"></div>
-            <button type="submit" class="dugme">Kayit Ol</button>
-          </form>
+
+        <div class="card">
+          <h2>Profil & Alerjen Tercihlerim</h2>
+          <p style="font-size:0.88rem;color:var(--muted);margin-top:0;">
+            Sectiginiz alerjenleri iceren yemekler menude uyari ile gosterilir.
+          </p>
+          <div id="profilAlerjenKutulari" class="alerjen-liste"></div>
+          <button class="btn" onclick="profilAlerjenKaydet()">Alerjenleri Kaydet</button>
         </div>
       </div>
     </section>
 
-    <section id="ekran-menu" class="ekran gizli">
-      <div class="kart">
-        <h2>Menuler ve Rezervasyon</h2>
-        <div class="filtre-satiri">
-          <div><label for="filtre-tarih">Tarih</label><input id="filtre-tarih" type="date"></div>
-          <div><label for="filtre-yemekhane">Yemekhane</label><select id="filtre-yemekhane"><option value="">Tum Yemekhaneler</option></select></div>
-          <div><label for="filtre-ogun">Ogun</label><select id="filtre-ogun"><option value="">Tum Ogunler</option></select></div>
-          <div><label for="filtre-alerjen">Haric Alerjen</label><select id="filtre-alerjen"><option value="">Yok</option></select></div>
-          <div><label><input id="filtre-vej" type="checkbox" style="width:auto;"> Yalnizca Vejetaryen</label></div>
-          <div><button type="button" id="menu-ara-dugme" class="dugme">Menuleri Getir</button></div>
+    <!-- 2. GUNUN MENUSU -->
+    <section id="panel-gunun" class="panel">
+      <div class="card">
+        <h2>Gunun Menusu</h2>
+        <div class="grid-2">
+          <div>
+            <label>Tarih</label>
+            <input type="date" id="gununTarih" />
+          </div>
+          <div>
+            <label>Yemekhane</label>
+            <select id="gununYemekhane"></select>
+          </div>
+          <div>
+            <label>Ogun</label>
+            <select id="gununOgun"></select>
+          </div>
         </div>
-        <div id="menu-listesi" class="izgara-2"></div>
+        <div class="row" style="margin-top:10px;">
+          <button class="btn" onclick="menuleriYukle('gunun')">Menuyu Getir</button>
+        </div>
       </div>
+      <div id="gununMenuListe"></div>
     </section>
 
-    <section id="ekran-rezervasyonlarim" class="ekran gizli">
-      <div class="kart">
+    <!-- 3. HAFTALIK MENU VE REZERVASYON -->
+    <section id="panel-haftalik" class="panel">
+      <div class="card">
+        <h2>Haftalik Menu ve Rezervasyon</h2>
+        <div class="grid-2">
+          <div>
+            <label>Baslangic Tarihi</label>
+            <input type="date" id="haftalikTarih" />
+          </div>
+          <div>
+            <label>Yemekhane</label>
+            <select id="haftalikYemekhane"></select>
+          </div>
+          <div>
+            <label>Alerjen Filtresi (Haric Tut)</label>
+            <select id="haftalikHaricAlerjen"></select>
+          </div>
+        </div>
+        <div class="row" style="margin-top:10px;">
+          <button class="btn" onclick="haftalikYukle()">Listele</button>
+        </div>
+      </div>
+      <div id="haftalikMenuListe"></div>
+    </section>
+
+    <!-- 4. REZERVASYONLARIM -->
+    <section id="panel-rezervasyonlarim" class="panel">
+      <div class="card">
         <h2>Rezervasyonlarim</h2>
-        <div class="tablo-kaydir">
+        <button class="btn" onclick="rezervasyonlarimiYukle()">Yenile</button>
+        <div class="table-wrap" style="margin-top:10px;">
           <table>
-            <thead><tr><th>No</th><th>Tarih</th><th>Yemekhane</th><th>Ogun</th><th>Ucret</th><th>Durum</th><th>Islem</th></tr></thead>
-            <tbody id="rezervasyon-tablo"></tbody>
+            <thead>
+              <tr>
+                <th>Tarih</th>
+                <th>Yemekhane</th>
+                <th>Ogun</th>
+                <th>Porsiyon</th>
+                <th>Ucret</th>
+                <th>Durum</th>
+                <th>Islem</th>
+              </tr>
+            </thead>
+            <tbody id="rezTabloGovde"></tbody>
           </table>
         </div>
       </div>
     </section>
 
-    <section id="ekran-bakiye" class="ekran gizli">
-      <div class="izgara-2">
-        <div class="kart">
-          <h2>Bakiye Yukle</h2>
-          <p>Tek seferde 10 - 1000 TL arasi yukleme yapabilirsiniz.</p>
-          <form id="bakiye-form">
-            <div class="alan-grubu"><label for="yukle-tutar">Tutar (TL)</label><input id="yukle-tutar" type="number" step="0.01" min="10" max="1000" value="100" required></div>
-            <button type="submit" class="dugme">Bakiye Yukle</button>
-          </form>
+    <!-- 5. BAKIYE -->
+    <section id="panel-bakiye" class="panel">
+      <div class="grid-2">
+        <div class="card">
+          <h2>Bakiye Durumu</h2>
+          <p style="font-size:1.3rem;font-weight:700;margin:6px 0;" id="guncelBakiyeDeger">0.00 TL</p>
+          <label>Yuklenecek Tutar (TL)</label>
+          <input type="number" step="0.01" min="1" id="yukleTutar" placeholder="50.00" />
+          <div class="row" style="margin-top:10px;">
+            <button class="btn" onclick="bakiyeYukle()">Bakiye Yukle</button>
+          </div>
         </div>
-        <div class="kart">
-          <h2>Bakiye Hareketleri</h2>
-          <div class="tablo-kaydir">
+        <div class="card">
+          <h2>Hareket Gecmisi</h2>
+          <div class="table-wrap">
             <table>
-              <thead><tr><th>Tarih</th><th>Tur</th><th>Tutar</th><th>Aciklama</th></tr></thead>
-              <tbody id="hareket-tablo"></tbody>
+              <thead>
+                <tr><th>Tarih</th><th>Tur</th><th>Tutar</th><th>Aciklama</th></tr>
+              </thead>
+              <tbody id="bakiyeHareketGovde"></tbody>
             </table>
           </div>
         </div>
       </div>
     </section>
 
-    <section id="ekran-turnike" class="ekran gizli">
-      <div class="kart">
-        <h2>Turnike Gecis</h2>
-        <form id="turnike-form">
-          <div class="filtre-satiri">
-            <div><label for="turnike-yemekhane">Yemekhane</label><select id="turnike-yemekhane"></select></div>
-            <div><label for="turnike-zaman">Test Zamani (Opsiyonel)</label><input id="turnike-zaman" type="datetime-local"></div>
-            <div><button type="submit" class="dugme">Kart Okut / Gecis Yap</button></div>
-          </div>
-        </form>
-        <p class="rozet">Not: Zaman bos birakilirsa sunucu anlik saati (NOW()) kullanir.</p>
-      </div>
-    </section>
-
-    <section id="ekran-degerlendirme" class="ekran gizli">
-      <div class="kart">
-        <h2>Kullanilmis Menu Degerlendirme</h2>
-        <form id="degerlendirme-form">
-          <div class="alan-grubu"><label for="deg-menu">Kullanilmis Menuleriniz</label><select id="deg-menu"></select></div>
-          <div class="alan-grubu"><label for="deg-puan">Puan (1-5)</label><select id="deg-puan"><option value="5">5</option><option value="4">4</option><option value="3">3</option><option value="2">2</option><option value="1">1</option></select></div>
-          <div class="alan-grubu"><label for="deg-yorum">Yorum</label><textarea id="deg-yorum" rows="3"></textarea></div>
-          <button type="submit" class="dugme">Degerlendirmeyi Kaydet</button>
-        </form>
-      </div>
-    </section>
-
-    <section id="ekran-yonetim" class="ekran gizli">
-      <div class="izgara-2">
-        <div class="kart">
-          <h2>Yeni Menu Olustur (Yonetici)</h2>
-          <form id="yeni-menu-form">
-            <div class="alan-grubu"><label for="ym-tarih">Tarih</label><input id="ym-tarih" type="date" required></div>
-            <div class="alan-grubu"><label for="ym-yemekhane">Yemekhane</label><select id="ym-yemekhane"></select></div>
-            <div class="alan-grubu"><label for="ym-ogun">Ogun</label><select id="ym-ogun"></select></div>
-            <div class="alan-grubu"><label for="ym-ogr-fiyat">Ogrenci Fiyati (TL)</label><input id="ym-ogr-fiyat" type="number" step="0.01" value="25.00" required></div>
-            <div class="alan-grubu"><label for="ym-per-fiyat">Personel Fiyati (TL)</label><input id="ym-per-fiyat" type="number" step="0.01" value="50.00" required></div>
-            <div class="alan-grubu"><label for="ym-yemekler">Yemekler (Coklu secim)</label><select id="ym-yemekler" multiple size="6"></select></div>
-            <button type="submit" class="dugme">Menuyu Kaydet</button>
-          </form>
+    <!-- 6. DEGERLENDIRME -->
+    <section id="panel-degerlendirme" class="panel">
+      <div class="card">
+        <h2>Menu Degerlendirme</h2>
+        <label>Menu ID</label>
+        <input type="number" id="degMenuId" placeholder="Ornek: 12" />
+        <label style="margin-top:8px;">Puan (1-5)</label>
+        <select id="degPuan">
+          <option value="5">5 - Cok Iyi</option>
+          <option value="4">4 - Iyi</option>
+          <option value="3">3 - Orta</option>
+          <option value="2">2 - Zayif</option>
+          <option value="1">1 - Kotu</option>
+        </select>
+        <label style="margin-top:8px;">Yorum</label>
+        <textarea id="degYorum" rows="2" placeholder="Gorusunuz..."></textarea>
+        <div class="row" style="margin-top:10px;">
+          <button class="btn" onclick="degerlendirmeGonder()">Kaydet</button>
         </div>
-        <div class="kart">
-          <h2>Doluluk ve Puan Raporu</h2>
-          <div class="filtre-satiri">
-            <div><label for="rapor-tarih">Tarih Filtresi</label><input id="rapor-tarih" type="date"></div>
-            <div><button type="button" id="rapor-getir-dugme" class="dugme">Raporu Getir</button></div>
-          </div>
-          <div class="tablo-kaydir">
-            <table>
-              <thead><tr><th>Tarih</th><th>Yemekhane</th><th>Ogun</th><th>Doluluk</th><th>Puan</th></tr></thead>
-              <tbody id="rapor-tablo"></tbody>
-            </table>
-          </div>
+      </div>
+    </section>
+
+    <!-- 7. YONETIM -->
+    <section id="panel-yonetim" class="panel">
+      <div class="card">
+        <h2>Doluluk ve Puan Raporu</h2>
+        <div class="row">
+          <input type="date" id="raporTarih" style="max-width:220px;" />
+          <button class="btn" onclick="raporGetir()">Raporu Getir</button>
+        </div>
+        <div class="table-wrap" style="margin-top:10px;">
+          <table>
+            <thead>
+              <tr><th>Tarih</th><th>Yemekhane</th><th>Ogun</th><th>Doluluk</th><th>Ort. Puan</th></tr>
+            </thead>
+            <tbody id="raporGovde"></tbody>
+          </table>
         </div>
       </div>
     </section>
   </main>
 
   <script>
-    const durum = { token: localStorage.getItem("oturum_token") || "", kullanici: null, tanimlar: null };
+    const API = "/api";
+    let token = localStorage.getItem("yemekhane_token") || "";
+    let aktifKullanici = null;
+    let tanimVeri = { yemekhaneler: [], ogunler: [], alerjenler: [], yemekler: [] };
+    let seciliAlerjenIdler = [];
 
-    function mesajGoster(metin, tip = "basari") {
-      const kutu = document.getElementById("mesaj-kutusu");
-      kutu.textContent = metin;
-      kutu.className = "bildirim " + (tip === "hata" ? "bildirim-hata" : "bildirim-basari");
+    function mesajGoster(metin, tip = "ok") {
+      const el = document.getElementById("mesajKutu");
+      el.className = "msg " + tip;
+      el.textContent = metin;
     }
 
     async function apiIstek(yol, secenekler = {}) {
-      const basliklar = { "Content-Type": "application/json", ...(secenekler.headers || {}) };
-      if (durum.token) basliklar["X-Oturum-Token"] = durum.token;
-      const yanit = await fetch(yol, { ...secenekler, headers: basliklar });
-      const veri = await yanit.json().catch(() => ({}));
-      if (!yanit.ok) throw new Error(veri.hata || ("HTTP " + yanit.status));
-      return veri;
-    }
-
-    function ustBarGuncelle() {
-      const ozet = document.getElementById("kullanici-ozeti");
-      const bakiyeEl = document.getElementById("bakiye-ozeti");
-      const cikisBtn = document.getElementById("cikis-dugme");
-      if (durum.kullanici) {
-        ozet.textContent = `${durum.kullanici.ad} ${durum.kullanici.soyad} (${durum.kullanici.rol})`;
-        bakiyeEl.textContent = `Bakiye: ${Number(durum.kullanici.bakiye || 0).toFixed(2)} TL`;
-        cikisBtn.classList.remove("gizli");
-      } else {
-        ozet.textContent = "Misafir";
-        bakiyeEl.textContent = "Bakiye: 0.00 TL";
-        cikisBtn.classList.add("gizli");
+      const headers = Object.assign({}, secenekler.headers || {});
+      if (token) headers["X-Oturum-Token"] = token;
+      if (secenekler.body && !headers["Content-Type"]) {
+        headers["Content-Type"] = "application/json";
       }
+      const resp = await fetch(API + yol, Object.assign({}, secenekler, { headers }));
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        throw new Error(data.hata || "Islem basarisiz.");
+      }
+      return data;
     }
 
-    function ekranAc(ad) {
-      document.querySelectorAll(".ekran").forEach(el => el.classList.add("gizli"));
-      document.getElementById("ekran-" + ad).classList.remove("gizli");
-      document.querySelectorAll(".sekme-dugme").forEach(btn => {
-        btn.classList.toggle("aktif", btn.dataset.ekran === ad);
+    function sekmeAc(ad) {
+      document.querySelectorAll("#sekmeNav button").forEach(b => {
+        b.classList.toggle("active", b.dataset.sekme === ad);
       });
-      if (ad === "menu") menuleriYukle();
+      document.querySelectorAll(".panel").forEach(p => {
+        p.classList.toggle("active", p.id === "panel-" + ad);
+      });
       if (ad === "rezervasyonlarim") rezervasyonlarimiYukle();
       if (ad === "bakiye") bakiyeYukle();
-      if (ad === "degerlendirme") degerlendirmeListesiYukle();
-      if (ad === "yonetim") raporYukle();
+      if (ad === "yonetim") raporGetir();
     }
 
-    document.querySelectorAll(".sekme-dugme").forEach(btn => {
-      btn.addEventListener("click", () => ekranAc(btn.dataset.ekran));
+    document.querySelectorAll("#sekmeNav button").forEach(btn => {
+      btn.addEventListener("click", () => sekmeAc(btn.dataset.sekme));
     });
 
-    document.getElementById("kayit-rol").addEventListener("change", e => {
-      document.getElementById("kayit-ogr-grup").classList.toggle("gizli", e.target.value !== "ogrenci");
-    });
-
-    document.getElementById("giris-form").addEventListener("submit", async e => {
-      e.preventDefault();
-      try {
-        const veri = await apiIstek("/api/giris", {
-          method: "POST",
-          body: JSON.stringify({
-            eposta: document.getElementById("giris-eposta").value,
-            sifre: document.getElementById("giris-sifre").value
-          })
-        });
-        durum.token = veri.token;
-        durum.kullanici = veri.kullanici;
-        localStorage.setItem("oturum_token", veri.token);
-        ustBarGuncelle();
-        mesajGoster(`Hos geldiniz, ${veri.kullanici.ad}!`);
-        ekranAc("menu");
-      } catch (err) {
-        mesajGoster(err.message, "hata");
+    function kullaniciCubugunuGuncelle() {
+      const el = document.getElementById("kullaniciCubugu");
+      if (!aktifKullanici) {
+        el.innerHTML = '<span>Giris yapilmadi</span>';
+        return;
       }
-    });
+      el.innerHTML = `
+        <span><strong>${aktifKullanici.ad} ${aktifKullanici.soyad}</strong> (${aktifKullanici.rol})</span>
+        <span>| Bakiye: <strong>${Number(aktifKullanici.bakiye || 0).toFixed(2)} TL</strong></span>
+        <button class="btn-secondary" onclick="cikisYap()">Cikis</button>
+      `;
+    }
 
-    document.getElementById("kayit-form").addEventListener("submit", async e => {
-      e.preventDefault();
-      try {
-        const veri = await apiIstek("/api/kayit", {
-          method: "POST",
-          body: JSON.stringify({
-            ad: document.getElementById("kayit-ad").value,
-            soyad: document.getElementById("kayit-soyad").value,
-            eposta: document.getElementById("kayit-eposta").value,
-            sifre: document.getElementById("kayit-sifre").value,
-            rol: document.getElementById("kayit-rol").value,
-            ogrenci_no: document.getElementById("kayit-ogr-no").value
-          })
-        });
-        mesajGoster(veri.mesaj);
-      } catch (err) {
-        mesajGoster(err.message, "hata");
+    function profilAlerjenRender() {
+      const wrap = document.getElementById("profilAlerjenKutulari");
+      if (!tanimVeri.alerjenler.length) {
+        wrap.innerHTML = "<span>Alerjen tanimi bulunamadi.</span>";
+        return;
       }
-    });
+      wrap.innerHTML = tanimVeri.alerjenler.map(a => {
+        const checked = seciliAlerjenIdler.includes(Number(a.id)) ? "checked" : "";
+        return `
+          <label class="alerjen-kutu">
+            <input type="checkbox" value="${a.id}" ${checked} onchange="alerjenSecimDegisti()" />
+            <span>${a.ad}</span>
+          </label>
+        `;
+      }).join("");
+    }
 
-    document.getElementById("cikis-dugme").addEventListener("click", async () => {
-      try { await apiIstek("/api/cikis", { method: "POST" }); } catch (_) {}
-      durum.token = "";
-      durum.kullanici = null;
-      localStorage.removeItem("oturum_token");
-      ustBarGuncelle();
-      mesajGoster("Cikis yapildi.");
-      ekranAc("giris");
-    });
+    function alerjenSecimDegisti() {
+      seciliAlerjenIdler = Array.from(
+        document.querySelectorAll("#profilAlerjenKutulari input[type='checkbox']:checked")
+      ).map(cb => Number(cb.value));
+    }
+
+    async function profilAlerjenKaydet() {
+      alerjenSecimDegisti();
+      try {
+        const res = await apiIstek("/profil/alerjenler", {
+          method: "PUT",
+          body: JSON.stringify({ alerjen_idler: seciliAlerjenIdler })
+        });
+        seciliAlerjenIdler = (res.alerjen_idler || []).map(Number);
+        mesajGoster(res.mesaj || "Alerjen tercihleri kaydedildi.", "ok");
+      } catch (e) {
+        mesajGoster(e.message, "err");
+      }
+    }
+
+    async function girisYap() {
+      const eposta = document.getElementById("girisEposta").value.trim();
+      const sifre = document.getElementById("girisSifre").value;
+      try {
+        const res = await apiIstek("/giris", {
+          method: "POST",
+          body: JSON.stringify({ eposta, sifre })
+        });
+        token = res.token;
+        localStorage.setItem("yemekhane_token", token);
+        aktifKullanici = res.kullanici;
+        seciliAlerjenIdler = (aktifKullanici.alerjen_idler || []).map(Number);
+        kullaniciCubugunuGuncelle();
+        profilAlerjenRender();
+        mesajGoster("Giris basarili.", "ok");
+      } catch (e) {
+        mesajGoster(e.message, "err");
+      }
+    }
+
+    async function cikisYap() {
+      try {
+        if (token) await apiIstek("/cikis", { method: "POST" });
+      } catch (_) {}
+      token = "";
+      aktifKullanici = null;
+      seciliAlerjenIdler = [];
+      localStorage.removeItem("yemekhane_token");
+      kullaniciCubugunuGuncelle();
+      profilAlerjenRender();
+      mesajGoster("Cikis yapildi.", "ok");
+    }
+
+    async function oturumKontrol() {
+      if (!token) return;
+      try {
+        const res = await apiIstek("/ben");
+        aktifKullanici = res.kullanici;
+        seciliAlerjenIdler = (aktifKullanici.alerjen_idler || []).map(Number);
+        kullaniciCubugunuGuncelle();
+        profilAlerjenRender();
+      } catch (_) {
+        token = "";
+        localStorage.removeItem("yemekhane_token");
+      }
+    }
 
     async function tanimlariYukle() {
-      const veri = await apiIstek("/api/tanimlar");
-      durum.tanimlar = veri;
-      const yhSelects = ["filtre-yemekhane", "turnike-yemekhane", "ym-yemekhane"];
-      yhSelects.forEach((id, idx) => {
-        const sel = document.getElementById(id);
-        sel.innerHTML = idx === 0 ? `<option value="">Tum Yemekhaneler</option>` : "";
-        veri.yemekhaneler.forEach(y => {
-          sel.innerHTML += `<option value="${y.id}">${y.ad} (${y.kapasite} kisi)</option>`;
-        });
-      });
-      const ogunSelects = ["filtre-ogun", "ym-ogun"];
-      ogunSelects.forEach((id, idx) => {
-        const sel = document.getElementById(id);
-        sel.innerHTML = idx === 0 ? `<option value="">Tum Ogunler</option>` : "";
-        veri.ogunler.forEach(o => {
-          sel.innerHTML += `<option value="${o.id}">${o.ad}</option>`;
-        });
-      });
-      const alerjenSel = document.getElementById("filtre-alerjen");
-      alerjenSel.innerHTML = `<option value="">Yok</option>`;
-      veri.alerjenler.forEach(a => {
-        alerjenSel.innerHTML += `<option value="${a.id}">${a.ad}</option>`;
-      });
-      const ymYemekSel = document.getElementById("ym-yemekler");
-      ymYemekSel.innerHTML = "";
-      veri.yemekler.forEach(ym => {
-        ymYemekSel.innerHTML += `<option value="${ym.id}">[${ym.kategori}] ${ym.ad} (${ym.kalori} kcal)</option>`;
-      });
+      const res = await apiIstek("/tanimlar");
+      tanimVeri = res;
+      const yhOpts = '<option value="">Tum Yemekhaneler</option>' +
+        (res.yemekhaneler || []).map(y => `<option value="${y.id}">${y.ad}</option>`).join("");
+      document.getElementById("gununYemekhane").innerHTML = yhOpts;
+      document.getElementById("haftalikYemekhane").innerHTML = yhOpts;
+
+      const ogOpts = '<option value="">Tum Ogunler</option>' +
+        (res.ogunler || []).map(o => `<option value="${o.id}">${o.ad}</option>`).join("");
+      document.getElementById("gununOgun").innerHTML = ogOpts;
+
+      const alOpts = '<option value="">Yok</option>' +
+        (res.alerjenler || []).map(a => `<option value="${a.id}">${a.ad}</option>`).join("");
+      document.getElementById("haftalikHaricAlerjen").innerHTML = alOpts;
+
+      profilAlerjenRender();
     }
 
-    async function menuleriYukle() {
-      const params = new URLSearchParams();
-      const tarih = document.getElementById("filtre-tarih").value;
-      const yh = document.getElementById("filtre-yemekhane").value;
-      const ogun = document.getElementById("filtre-ogun").value;
-      const alerjen = document.getElementById("filtre-alerjen").value;
-      const vej = document.getElementById("filtre-vej").checked;
-      if (tarih) params.set("tarih", tarih);
-      if (yh) params.set("yemekhane_id", yh);
-      if (ogun) params.set("ogun_id", ogun);
-      if (alerjen) params.set("haric_alerjen", alerjen);
-      if (vej) params.set("vejetaryen", "1");
+    function porsiyonSecimHtml(menu) {
+      const rol = aktifKullanici?.rol || "ogrenci";
+      const tamFiyat = rol === "personel" ? menu.personel_fiyati : menu.ogrenci_fiyati;
+      const yarimFiyat = rol === "personel" ? menu.personel_yarim_fiyat : menu.ogrenci_yarim_fiyat;
 
+      if (!menu.yarim_porsiyon_uygun) {
+        return `
+          <div class="row" style="margin-top:8px;">
+            <span class="etiket">Tam Porsiyon: ${Number(tamFiyat).toFixed(2)} TL</span>
+            <span class="etiket">Kahvaltida yarim porsiyon yok</span>
+          </div>
+        `;
+      }
+      return `
+        <div class="row" style="margin-top:8px;">
+          <label style="margin:0;max-width:260px;">
+            Porsiyon Secimi
+            <select id="porsiyon-sec-${menu.menu_id}">
+              <option value="tam">Tam Porsiyon (${Number(tamFiyat).toFixed(2)} TL)</option>
+              <option value="yarim">Yarim Porsiyon - %60 (${Number(yarimFiyat).toFixed(2)} TL)</option>
+            </select>
+          </label>
+        </div>
+      `;
+    }
+
+    function menuKartHtml(m) {
+      const yemeklerHtml = (m.yemekler || []).map(y => {
+        const uyariVar = Boolean(y.alerjen_uyarisi);
+        return `
+          <div class="yemek-satir ${uyariVar ? "uyarili" : ""}">
+            <div>
+              <strong>${y.ad}</strong>
+              <span class="etiket">${y.kalori} kcal</span>
+              ${y.vejetaryen ? '<span class="etiket">Vejetaryen</span>' : ""}
+              ${y.alerjenler ? `<span class="etiket">Alerjen: ${y.alerjenler}</span>` : ""}
+            </div>
+            ${uyariVar ? '<span class="etiket uyari">ALERJEN UYARISI (Profilinizle eslesiyor)</span>' : ""}
+          </div>
+        `;
+      }).join("");
+
+      const genelUyari = m.kullanici_alerjen_uyarisi
+        ? `<div class="alerjen-uyari">Uyari: Bu menudeki su yemekler sectiginiz alerjenleri iceriyor: ${(m.uyari_yemekleri || []).join(", ")}</div>`
+        : "";
+
+      return `
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+            <div>
+              <strong>${m.tarih}</strong> — <span>${m.yemekhane}</span> (${m.ogun})
+              <span class="etiket">Menu #${m.menu_id}</span>
+            </div>
+            <div>
+              <span class="etiket">Bos Yer: ${m.bos_yer}/${m.kapasite}</span>
+              <span class="etiket">Toplam: ${m.toplam_kalori} kcal</span>
+              <span class="etiket">Ogr: ${Number(m.ogrenci_fiyati).toFixed(2)} TL</span>
+              <span class="etiket">Per: ${Number(m.personel_fiyati).toFixed(2)} TL</span>
+            </div>
+          </div>
+          ${genelUyari}
+          <div style="margin-top:8px;">${yemeklerHtml || "<em>Yemek kaydi yok.</em>"}</div>
+          ${porsiyonSecimHtml(m)}
+          <div class="row" style="margin-top:10px;">
+            <button class="btn" onclick="rezervasyonYap(${m.menu_id})">Rezervasyon Yap</button>
+          </div>
+        </div>
+      `;
+    }
+
+    async function menuleriYukle(hedef) {
+      const params = new URLSearchParams();
+      if (hedef === "gunun") {
+        const t = document.getElementById("gununTarih").value;
+        const y = document.getElementById("gununYemekhane").value;
+        const o = document.getElementById("gununOgun").value;
+        if (t) params.set("tarih", t);
+        if (y) params.set("yemekhane_id", y);
+        if (o) params.set("ogun_id", o);
+      }
       try {
-        const veri = await apiIstek("/api/menuler?" + params.toString());
-        const kapsayici = document.getElementById("menu-listesi");
-        if (!veri.menuler.length) {
-          kapsayici.innerHTML = `<p>Secilen filtreye uygun menu bulunamadi.</p>`;
-          return;
+        const res = await apiIstek("/menuler?" + params.toString());
+        const liste = res.menuler || [];
+        const targetEl = document.getElementById(hedef === "gunun" ? "gununMenuListe" : "haftalikMenuListe");
+        targetEl.innerHTML = liste.length
+          ? liste.map(menuKartHtml).join("")
+          : '<div class="card">Secili kriterlere uygun menu bulunamadi.</div>';
+      } catch (e) {
+        mesajGoster(e.message, "err");
+      }
+    }
+
+    async function haftalikYukle() {
+      const params = new URLSearchParams();
+      const y = document.getElementById("haftalikYemekhane").value;
+      const a = document.getElementById("haftalikHaricAlerjen").value;
+      if (y) params.set("yemekhane_id", y);
+      if (a) params.set("haric_alerjen", a);
+      try {
+        const res = await apiIstek("/menuler?" + params.toString());
+        const baslangic = document.getElementById("haftalikTarih").value;
+        let liste = res.menuler || [];
+        if (baslangic) {
+          liste = liste.filter(m => m.tarih >= baslangic);
         }
-        const rol = durum.kullanici?.rol || "ogrenci";
-        kapsayici.innerHTML = veri.menuler.map(m => {
-          const fiyat = rol === "ogrenci" ? m.ogrenci_fiyati : m.personel_fiyati;
-          const yemekSatirlari = m.yemekler.map(y =>
-            `<li><strong>${y.ad}</strong> (${y.kalori} kcal)${y.vejetaryen ? " [Vej]" : ""}${y.alerjenler ? " - Alerjen: " + y.alerjenler : ""}</li>`
-          ).join("");
-          return `
-            <article class="kart">
-              <div style="display:flex;justify-content:space-between;gap:0.5rem;flex-wrap:wrap;">
-                <strong>${m.tarih} · ${m.ogun}</strong>
-                <span class="bos-yer-vurgu">Bos yer: ${m.bos_yer}/${m.kapasite}</span>
-              </div>
-              <div class="rozet" style="margin-top:0.35rem;">${m.yemekhane}</div>
-              <ul class="yemek-listesi">${yemekSatirlari}</ul>
-              <div style="display:flex;justify-content:space-between;align-items:center;gap:0.5rem;flex-wrap:wrap;">
-                <div>
-                  <span class="fiyat-vurgu">${Number(fiyat).toFixed(2)} TL</span>
-                  <span class="rozet">${m.toplam_kalori} kcal</span>
-                  <span class="rozet">Puan: ${m.ortalama_puan ?? "-"} (${m.oy_sayisi})</span>
-                </div>
-                <button type="button" class="dugme" onclick="rezervasyonYap(${m.menu_id})">Rezervasyon Yap</button>
-              </div>
-            </article>
-          `;
-        }).join("");
-      } catch (err) {
-        mesajGoster(err.message, "hata");
+        document.getElementById("haftalikMenuListe").innerHTML = liste.length
+          ? liste.map(menuKartHtml).join("")
+          : '<div class="card">Menu bulunamadi.</div>';
+      } catch (e) {
+        mesajGoster(e.message, "err");
       }
     }
 
     async function rezervasyonYap(menuId) {
+      const sel = document.getElementById("porsiyon-sec-" + menuId);
+      const porsiyon = sel ? sel.value : "tam";
       try {
-        const veri = await apiIstek("/api/rezervasyonlar", {
+        const res = await apiIstek("/rezervasyonlar", {
           method: "POST",
-          body: JSON.stringify({ menu_id: menuId })
+          body: JSON.stringify({ menu_id: menuId, porsiyon })
         });
-        if (durum.kullanici) durum.kullanici.bakiye = veri.sonuc.bakiye;
-        ustBarGuncelle();
-        mesajGoster(`${veri.mesaj} Ucret: ${Number(veri.sonuc.ucret).toFixed(2)} TL, Yeni Bakiye: ${Number(veri.sonuc.bakiye).toFixed(2)} TL`);
-        menuleriYukle();
-      } catch (err) {
-        mesajGoster(err.message, "hata");
+        mesajGoster(res.mesaj || "Rezervasyon olusturuldu.", "ok");
+        await oturumKontrol();
+        menuleriYukle("gunun");
+      } catch (e) {
+        mesajGoster(e.message, "err");
       }
     }
 
     async function rezervasyonlarimiYukle() {
       try {
-        const veri = await apiIstek("/api/rezervasyonlarim");
-        const tbody = document.getElementById("rezervasyon-tablo");
-        if (!veri.rezervasyonlar.length) {
-          tbody.innerHTML = `<tr><td colspan="7">Kayitli rezervasyon bulunamadi.</td></tr>`;
-          return;
-        }
-        tbody.innerHTML = veri.rezervasyonlar.map(r => `
+        const res = await apiIstek("/rezervasyonlarim");
+        const rows = res.rezervasyonlar || [];
+        document.getElementById("rezTabloGovde").innerHTML = rows.map(r => `
           <tr>
-            <td>#${r.rezervasyon_id}</td>
             <td>${r.tarih}</td>
             <td>${r.yemekhane}</td>
             <td>${r.ogun}</td>
+            <td><span class="etiket">${(r.porsiyon || "tam").toUpperCase()}</span></td>
             <td>${Number(r.ucret).toFixed(2)} TL</td>
-            <td><span class="rozet">${r.durum}</span></td>
-            <td>${r.durum === "aktif" ? `<button type="button" class="dugme" style="min-height:34px;padding:0.25rem 0.65rem;" onclick="rezervasyonIptal(${r.rezervasyon_id})">Iptal Et</button>` : "-"}</td>
+            <td>${r.durum}</td>
+            <td>
+              ${r.durum === "aktif"
+                ? `<button class="btn-danger" onclick="rezervasyonIptal(${r.rezervasyon_id})">Iptal</button>`
+                : "-"}
+            </td>
           </tr>
-        `).join("");
-      } catch (err) {
-        mesajGoster(err.message, "hata");
+        `).join("") || '<tr><td colspan="7">Kayit bulunamadi.</td></tr>';
+      } catch (e) {
+        mesajGoster(e.message, "err");
       }
     }
 
     async function rezervasyonIptal(rezId) {
       try {
-        const veri = await apiIstek(`/api/rezervasyonlar/${rezId}/iptal`, { method: "POST" });
-        if (durum.kullanici) durum.kullanici.bakiye = veri.sonuc.bakiye;
-        ustBarGuncelle();
-        mesajGoster(`${veri.mesaj} Iade: ${Number(veri.sonuc.iade).toFixed(2)} TL, Yeni Bakiye: ${Number(veri.sonuc.bakiye).toFixed(2)} TL`);
+        const res = await apiIstek(`/rezervasyonlar/${rezId}/iptal`, { method: "POST" });
+        mesajGoster(res.mesaj || "Iptal edildi.", "ok");
+        await oturumKontrol();
         rezervasyonlarimiYukle();
-      } catch (err) {
-        mesajGoster(err.message, "hata");
+      } catch (e) {
+        mesajGoster(e.message, "err");
       }
     }
 
     async function bakiyeYukle() {
+      const tutarEl = document.getElementById("yukleTutar");
+      const tutar = tutarEl && tutarEl.value ? parseFloat(tutarEl.value) : null;
       try {
-        const veri = await apiIstek("/api/bakiye");
-        if (durum.kullanici) durum.kullanici.bakiye = veri.bakiye;
-        ustBarGuncelle();
-        const tbody = document.getElementById("hareket-tablo");
-        tbody.innerHTML = veri.hareketler.map(h => `
+        if (tutar && tutar > 0) {
+          await apiIstek("/bakiye/yukle", {
+            method: "POST",
+            body: JSON.stringify({ tutar })
+          });
+          tutarEl.value = "";
+          mesajGoster("Bakiye yuklendi.", "ok");
+        }
+        const det = await apiIstek("/bakiye");
+        document.getElementById("guncelBakiyeDeger").textContent = `${Number(det.bakiye || 0).toFixed(2)} TL`;
+        if (aktifKullanici) {
+          aktifKullanici.bakiye = det.bakiye;
+          kullaniciCubugunuGuncelle();
+        }
+        document.getElementById("bakiyeHareketGovde").innerHTML = (det.hareketler || []).map(h => `
           <tr>
             <td>${h.olusturma}</td>
             <td>${h.tur}</td>
             <td>${Number(h.tutar).toFixed(2)} TL</td>
-            <td>${h.aciklama || "-"}</td>
+            <td>${h.aciklama || ""}</td>
           </tr>
-        `).join("");
-      } catch (err) {
-        mesajGoster(err.message, "hata");
+        `).join("") || '<tr><td colspan="4">Hareket yok.</td></tr>';
+      } catch (e) {
+        mesajGoster(e.message, "err");
       }
     }
 
-    document.getElementById("bakiye-form").addEventListener("submit", async e => {
-      e.preventDefault();
+    async function degerlendirmeGonder() {
+      const menu_id = parseInt(document.getElementById("degMenuId").value, 10);
+      const puan = parseInt(document.getElementById("degPuan").value, 10);
+      const yorum = document.getElementById("degYorum").value;
       try {
-        const veri = await apiIstek("/api/bakiye/yukle", {
+        const res = await apiIstek("/degerlendirmeler", {
           method: "POST",
-          body: JSON.stringify({ tutar: document.getElementById("yukle-tutar").value })
+          body: JSON.stringify({ menu_id, puan, yorum })
         });
-        if (durum.kullanici) durum.kullanici.bakiye = veri.sonuc.bakiye;
-        ustBarGuncelle();
-        mesajGoster(`${veri.mesaj} Guncel Bakiye: ${Number(veri.sonuc.bakiye).toFixed(2)} TL`);
-        bakiyeYukle();
-      } catch (err) {
-        mesajGoster(err.message, "hata");
-      }
-    });
-
-    document.getElementById("turnike-form").addEventListener("submit", async e => {
-      e.preventDefault();
-      const hamZaman = document.getElementById("turnike-zaman").value;
-      const zaman = hamZaman ? hamZaman.replace("T", " ") + ":00" : "";
-      try {
-        const veri = await apiIstek("/api/turnike/gecis", {
-          method: "POST",
-          body: JSON.stringify({
-            yemekhane_id: document.getElementById("turnike-yemekhane").value,
-            zaman
-          })
-        });
-        mesajGoster(`${veri.mesaj} (${veri.sonuc.ogun} - Rez #${veri.sonuc.rezervasyon_id})`);
-      } catch (err) {
-        mesajGoster(err.message, "hata");
-      }
-    });
-
-    async function degerlendirmeListesiYukle() {
-      try {
-        const veri = await apiIstek("/api/rezervasyonlarim");
-        const kullanilmislar = veri.rezervasyonlar.filter(r => r.durum === "kullanildi");
-        const sel = document.getElementById("deg-menu");
-        sel.innerHTML = kullanilmislar.length
-          ? kullanilmislar.map(r => `<option value="${r.menu_id}">${r.tarih} · ${r.yemekhane} · ${r.ogun} (Menu #${r.menu_id})</option>`).join("")
-          : `<option value="">Kullanilmis rezervasyonunuz bulunmuyor</option>`;
-      } catch (err) {
-        mesajGoster(err.message, "hata");
+        mesajGoster(res.mesaj || "Degerlendirme kaydedildi.", "ok");
+      } catch (e) {
+        mesajGoster(e.message, "err");
       }
     }
 
-    document.getElementById("degerlendirme-form").addEventListener("submit", async e => {
-      e.preventDefault();
+    async function raporGetir() {
+      const tarih = document.getElementById("raporTarih").value;
+      const q = tarih ? `?tarih=${encodeURIComponent(tarih)}` : "";
       try {
-        const veri = await apiIstek("/api/degerlendirmeler", {
-          method: "POST",
-          body: JSON.stringify({
-            menu_id: document.getElementById("deg-menu").value,
-            puan: document.getElementById("deg-puan").value,
-            yorum: document.getElementById("deg-yorum").value
-          })
-        });
-        mesajGoster(veri.mesaj);
-      } catch (err) {
-        mesajGoster(err.message, "hata");
-      }
-    });
-
-    async function raporYukle() {
-      try {
-        const tarih = document.getElementById("rapor-tarih").value;
-        const qs = tarih ? "?tarih=" + encodeURIComponent(tarih) : "";
-        const veri = await apiIstek("/api/yonetim/rapor" + qs);
-        const tbody = document.getElementById("rapor-tablo");
-        tbody.innerHTML = veri.rapor.map(r => `
+        const res = await apiIstek("/yonetim/rapor" + q);
+        document.getElementById("raporGovde").innerHTML = (res.rapor || []).map(r => `
           <tr>
             <td>${r.tarih}</td>
             <td>${r.yemekhane}</td>
             <td>${r.ogun}</td>
-            <td>${r.rezerve}/${r.kapasite} (%${r.doluluk_yuzde})</td>
-            <td>${r.ortalama_puan ?? "-"} (${r.oy_sayisi})</td>
+            <td>%${r.doluluk_yuzde} (${r.rezerve}/${r.kapasite})</td>
+            <td>${r.ortalama_puan ?? "-"}</td>
           </tr>
-        `).join("");
-      } catch (err) {
-        mesajGoster(err.message, "hata");
+        `).join("") || '<tr><td colspan="5">Kayit yok.</td></tr>';
+      } catch (e) {
+        mesajGoster(e.message, "err");
       }
     }
 
-    document.getElementById("yeni-menu-form").addEventListener("submit", async e => {
-      e.preventDefault();
-      const seciliYemekler = Array.from(document.getElementById("ym-yemekler").selectedOptions).map(o => Number(o.value));
-      try {
-        const veri = await apiIstek("/api/yonetim/menuler", {
-          method: "POST",
-          body: JSON.stringify({
-            tarih: document.getElementById("ym-tarih").value,
-            yemekhane_id: document.getElementById("ym-yemekhane").value,
-            ogun_id: document.getElementById("ym-ogun").value,
-            ogrenci_fiyati: document.getElementById("ym-ogr-fiyat").value,
-            personel_fiyati: document.getElementById("ym-per-fiyat").value,
-            yemek_idler: seciliYemekler
-          })
-        });
-        mesajGoster(`${veri.mesaj} (Menu #${veri.menu_id})`);
-        raporYukle();
-      } catch (err) {
-        mesajGoster(err.message, "hata");
-      }
-    });
-
-    document.getElementById("menu-ara-dugme").addEventListener("click", menuleriYukle);
-    document.getElementById("rapor-getir-dugme").addEventListener("click", raporYukle);
-
     (async function baslat() {
       const bugun = new Date().toISOString().slice(0, 10);
-      document.getElementById("filtre-tarih").value = bugun;
-      document.getElementById("ym-tarih").value = bugun;
-      try { await tanimlariYukle(); } catch (_) {}
-      if (durum.token) {
-        try {
-          const benVeri = await apiIstek("/api/ben");
-          durum.kullanici = benVeri.kullanici;
-        } catch (_) {
-          durum.token = "";
-          localStorage.removeItem("oturum_token");
-        }
+      document.getElementById("gununTarih").value = bugun;
+      document.getElementById("haftalikTarih").value = bugun;
+      document.getElementById("raporTarih").value = bugun;
+      try {
+        await tanimlariYukle();
+        await oturumKontrol();
+        await menuleriYukle("gunun");
+      } catch (e) {
+        mesajGoster(e.message, "err");
       }
-      ustBarGuncelle();
     })();
   </script>
 </body>
