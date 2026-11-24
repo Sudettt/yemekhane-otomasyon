@@ -1,3 +1,4 @@
+import datetime
 import json
 import os
 import uuid
@@ -11,10 +12,24 @@ app = Flask(__name__)
 
 REDIS_HOST = os.getenv("REDIS_HOST", "redis")
 REDIS_PORT = int(os.getenv("REDIS_PORT", "6379"))
-OTURUM_SURESI = int(os.getenv("OTURUM_SURESI", "86400"))
-MENU_ONBELLEK_SURESI = int(os.getenv("MENU_ONBELLEK_SURESI", "60"))
+OTURUM_SURESI = int(os.getenv("OTURUM_SURESI", "1800"))  # 30 dakika
 
 redis_istemci = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, decode_responses=True)
+
+
+def _gun_sonuna_kadar_saniye(tarih_str=None):
+    simdi = datetime.datetime.now()
+    if tarih_str:
+        try:
+            hedef_gun = datetime.date.fromisoformat(str(tarih_str)[:10])
+            gun_sonu = datetime.datetime.combine(hedef_gun, datetime.time(23, 59, 59))
+            kalan = int((gun_sonu - simdi).total_seconds())
+            return max(60, kalan)
+        except ValueError:
+            pass
+    gun_sonu = datetime.datetime.combine(simdi.date(), datetime.time(23, 59, 59))
+    kalan = int((gun_sonu - simdi).total_seconds())
+    return max(60, kalan)
 
 
 def _kullanici_sozlugu(satir):
@@ -53,9 +68,12 @@ def oturum_kullanicisi():
     token = request.headers.get("X-Oturum-Token", "").strip()
     if not token:
         return None
-    ham = redis_istemci.get(f"oturum:{token}")
+    anahtar = f"oturum:{token}"
+    ham = redis_istemci.get(anahtar)
     if not ham:
         return None
+    # Her istekte oturum suresini (30 dk) yenile
+    redis_istemci.expire(anahtar, OTURUM_SURESI)
     kid = json.loads(ham).get("kullanici_id")
     if not kid:
         return None
@@ -88,9 +106,15 @@ def yonetici_gerekli():
     return k, None
 
 
-def onbellek_temizle():
-    for k in redis_istemci.scan_iter("menuler:*"):
+def menu_onbellek_sil(yemekhane_id=None, tarih=None, ogun_id=None):
+    if yemekhane_id and tarih and ogun_id:
+        key = f"menu:{int(yemekhane_id)}:{str(tarih)[:10]}:{int(ogun_id)}"
+        redis_istemci.delete(key)
+        app.logger.info(f"REDIS MENU SILINDI: {key}")
+        return
+    for k in redis_istemci.scan_iter("menu:*"):
         redis_istemci.delete(k)
+        app.logger.info(f"REDIS MENU SILINDI: {k}")
 
 
 @app.get("/api/saglik")
@@ -118,6 +142,7 @@ def giris():
     bilgi.pop("_sifre_hash", None)
     token = uuid.uuid4().hex
     redis_istemci.setex(f"oturum:{token}", OTURUM_SURESI, json.dumps({"kullanici_id": bilgi["id"]}))
+    app.logger.info(f"REDIS OTURUM OLUSTURULDU: oturum:{token} (TTL={OTURUM_SURESI}s)")
     return jsonify({"token": token, "kullanici": bilgi}), 200
 
 
@@ -157,6 +182,7 @@ def cikis():
     token = request.headers.get("X-Oturum-Token", "").strip()
     if token:
         redis_istemci.delete(f"oturum:{token}")
+        app.logger.info(f"REDIS OTURUM SILINDI: oturum:{token}")
     return jsonify({"mesaj": "Cikis yapildi."}), 200
 
 
@@ -197,6 +223,85 @@ def tanimlar():
         conn.close()
 
 
+def _tek_menu_detay_getir(cur, menu_id):
+    cur.execute(
+        "SELECT m.id AS menu_id, m.tarih, m.ogrenci_fiyati, m.personel_fiyati, "
+        "yh.id AS yemekhane_id, yh.ad AS yemekhane, yh.kapasite, "
+        "og.id AS ogun_id, og.ad AS ogun, "
+        "COUNT(DISTINCT CASE WHEN r.durum = 'aktif' THEN r.id END) AS aktif_rez, "
+        "ROUND(AVG(d.puan), 1) AS ort_puan, COUNT(DISTINCT d.id) AS oy_sayisi "
+        "FROM menuler m "
+        "JOIN yemekhaneler yh ON yh.id = m.yemekhane_id "
+        "JOIN ogunler og ON og.id = m.ogun_id "
+        "LEFT JOIN rezervasyonlar r ON r.menu_id = m.id "
+        "LEFT JOIN degerlendirmeler d ON d.menu_id = m.id "
+        "WHERE m.id = %s "
+        "GROUP BY m.id, m.tarih, m.ogrenci_fiyati, m.personel_fiyati, yh.id, yh.ad, yh.kapasite, og.id, og.ad, og.sira",
+        (menu_id,),
+    )
+    m = cur.fetchone()
+    if not m:
+        return None
+    cur.execute(
+        "SELECT y.id AS yemek_id, y.ad, y.kalori, y.vejetaryen, "
+        "GROUP_CONCAT(DISTINCT a.ad ORDER BY a.ad SEPARATOR ', ') AS alerjenler, "
+        "GROUP_CONCAT(DISTINCT a.id) AS alerjen_idler "
+        "FROM menu_yemekleri my "
+        "JOIN yemekler y ON y.id = my.yemek_id "
+        "LEFT JOIN yemek_alerjenleri ya ON ya.yemek_id = y.id "
+        "LEFT JOIN alerjenler a ON a.id = ya.alerjen_id "
+        "WHERE my.menu_id = %s "
+        "GROUP BY y.id, y.ad, y.kalori, y.vejetaryen",
+        (menu_id,),
+    )
+    ym_list = cur.fetchall()
+    return {
+        "menu_id": m["menu_id"],
+        "tarih": str(m["tarih"]),
+        "yemekhane_id": m["yemekhane_id"],
+        "yemekhane": m["yemekhane"],
+        "ogun_id": m["ogun_id"],
+        "ogun": m["ogun"],
+        "kapasite": int(m["kapasite"]),
+        "bos_yer": max(0, int(m["kapasite"]) - int(m["aktif_rez"] or 0)),
+        "ogrenci_fiyati": float(m["ogrenci_fiyati"]),
+        "personel_fiyati": float(m["personel_fiyati"]),
+        "toplam_kalori": sum(int(y["kalori"] or 0) for y in ym_list),
+        "ortalama_puan": float(m["ort_puan"]) if m["ort_puan"] is not None else None,
+        "oy_sayisi": int(m["oy_sayisi"] or 0),
+        "_alerjen_idler": [
+            int(x)
+            for y in ym_list
+            for x in (y["alerjen_idler"] or "").split(",")
+            if x
+        ],
+        "_tum_vejetaryen": bool(ym_list) and all(bool(y["vejetaryen"]) for y in ym_list),
+        "yemekler": [
+            {
+                "yemek_id": y["yemek_id"],
+                "ad": y["ad"],
+                "kalori": int(y["kalori"] or 0),
+                "vejetaryen": bool(y["vejetaryen"]),
+                "alerjenler": y["alerjenler"] or "",
+            }
+            for y in ym_list
+        ],
+    }
+
+
+def _filtre_uygun_mu(item, haric_alerjen, vejetaryen):
+    if vejetaryen and not item.get("_tum_vejetaryen"):
+        return False
+    if haric_alerjen and int(haric_alerjen) in item.get("_alerjen_idler", []):
+        return False
+    return True
+
+
+def _temiz_menu_cikti(item):
+    kopya = {k: v for k, v in item.items() if not k.startswith("_")}
+    return kopya
+
+
 @app.get("/api/menuler")
 def menuler():
     tarih = (request.args.get("tarih") or "").strip()
@@ -204,94 +309,42 @@ def menuler():
     ogun_id = (request.args.get("ogun_id") or "").strip()
     haric_alerjen = (request.args.get("haric_alerjen") or "").strip()
     vejetaryen = (request.args.get("vejetaryen") or "").strip() in ("1", "true", "evet")
-    key = f"menuler:{tarih}:{yemekhane_id}:{ogun_id}:{haric_alerjen}:{int(vejetaryen)}"
-    cached = redis_istemci.get(key)
-    if cached:
-        return jsonify(json.loads(cached)), 200
+
     conn = okuma_baglantisi()
     try:
         with conn.cursor() as cur:
-            sql = (
-                "SELECT m.id AS menu_id, m.tarih, m.ogrenci_fiyati, m.personel_fiyati, "
-                "yh.id AS yemekhane_id, yh.ad AS yemekhane, yh.kapasite, "
-                "og.id AS ogun_id, og.ad AS ogun, "
-                "COUNT(DISTINCT CASE WHEN r.durum = 'aktif' THEN r.id END) AS aktif_rez, "
-                "ROUND(AVG(d.puan), 1) AS ort_puan, COUNT(DISTINCT d.id) AS oy_sayisi "
-                "FROM menuler m "
-                "JOIN yemekhaneler yh ON yh.id = m.yemekhane_id "
-                "JOIN ogunler og ON og.id = m.ogun_id "
-                "LEFT JOIN rezervasyonlar r ON r.menu_id = m.id "
-                "LEFT JOIN degerlendirmeler d ON d.menu_id = m.id "
-                "WHERE 1=1"
-            )
+            sql = "SELECT id, yemekhane_id, tarih, ogun_id FROM menuler WHERE 1=1"
             params = []
             if tarih:
-                sql += " AND m.tarih = %s"
+                sql += " AND tarih = %s"
                 params.append(tarih)
             if yemekhane_id:
-                sql += " AND m.yemekhane_id = %s"
+                sql += " AND yemekhane_id = %s"
                 params.append(int(yemekhane_id))
             if ogun_id:
-                sql += " AND m.ogun_id = %s"
+                sql += " AND ogun_id = %s"
                 params.append(int(ogun_id))
-            sql += (
-                " GROUP BY m.id, m.tarih, m.ogrenci_fiyati, m.personel_fiyati, "
-                "yh.id, yh.ad, yh.kapasite, og.id, og.ad, og.sira "
-                "ORDER BY m.tarih, og.sira, yh.id"
-            )
+            sql += " ORDER BY tarih, ogun_id, yemekhane_id"
             cur.execute(sql, params)
-            rows = cur.fetchall()
+            secili_menuler = cur.fetchall()
+
             out = []
-            for m in rows:
-                cur.execute(
-                    "SELECT y.id AS yemek_id, y.ad, y.kalori, y.vejetaryen, "
-                    "GROUP_CONCAT(DISTINCT a.ad ORDER BY a.ad SEPARATOR ', ') AS alerjenler, "
-                    "GROUP_CONCAT(DISTINCT a.id) AS alerjen_idler "
-                    "FROM menu_yemekleri my "
-                    "JOIN yemekler y ON y.id = my.yemek_id "
-                    "LEFT JOIN yemek_alerjenleri ya ON ya.yemek_id = y.id "
-                    "LEFT JOIN alerjenler a ON a.id = ya.alerjen_id "
-                    "WHERE my.menu_id = %s "
-                    "GROUP BY y.id, y.ad, y.kalori, y.vejetaryen",
-                    (m["menu_id"],),
-                )
-                ym_list = cur.fetchall()
-                if vejetaryen and (not ym_list or any(not y["vejetaryen"] for y in ym_list)):
-                    continue
-                if haric_alerjen:
-                    yid = int(haric_alerjen)
-                    if any(yid in [int(x) for x in (y["alerjen_idler"] or "").split(",") if x] for y in ym_list):
-                        continue
-                out.append(
-                    {
-                        "menu_id": m["menu_id"],
-                        "tarih": str(m["tarih"]),
-                        "yemekhane_id": m["yemekhane_id"],
-                        "yemekhane": m["yemekhane"],
-                        "ogun_id": m["ogun_id"],
-                        "ogun": m["ogun"],
-                        "kapasite": int(m["kapasite"]),
-                        "bos_yer": max(0, int(m["kapasite"]) - int(m["aktif_rez"] or 0)),
-                        "ogrenci_fiyati": float(m["ogrenci_fiyati"]),
-                        "personel_fiyati": float(m["personel_fiyati"]),
-                        "toplam_kalori": sum(int(y["kalori"] or 0) for y in ym_list),
-                        "ortalama_puan": float(m["ort_puan"]) if m["ort_puan"] is not None else None,
-                        "oy_sayisi": int(m["oy_sayisi"] or 0),
-                        "yemekler": [
-                            {
-                                "yemek_id": y["yemek_id"],
-                                "ad": y["ad"],
-                                "kalori": int(y["kalori"] or 0),
-                                "vejetaryen": bool(y["vejetaryen"]),
-                                "alerjenler": y["alerjenler"] or "",
-                            }
-                            for y in ym_list
-                        ],
-                    }
-                )
-        payload = {"menuler": out}
-        redis_istemci.setex(key, MENU_ONBELLEK_SURESI, json.dumps(payload))
-        return jsonify(payload), 200
+            for row in secili_menuler:
+                key = f"menu:{row['yemekhane_id']}:{str(row['tarih'])[:10]}:{row['ogun_id']}"
+                cached = redis_istemci.get(key)
+                if cached:
+                    app.logger.info(f"CACHE HIT (Redis): {key}")
+                    detay = json.loads(cached)
+                else:
+                    app.logger.info(f"CACHE MISS (DB): {key}")
+                    detay = _tek_menu_detay_getir(cur, row["id"])
+                    if detay:
+                        ttl = _gun_sonuna_kadar_saniye(row["tarih"])
+                        redis_istemci.setex(key, ttl, json.dumps(detay))
+                if detay and _filtre_uygun_mu(detay, haric_alerjen, vejetaryen):
+                    out.append(_temiz_menu_cikti(detay))
+
+        return jsonify({"menuler": out}), 200
     finally:
         conn.close()
 
@@ -307,12 +360,15 @@ def rezervasyon_olustur():
     conn = yazma_baglantisi()
     try:
         with conn.cursor() as cur:
+            cur.execute("SELECT yemekhane_id, tarih, ogun_id FROM menuler WHERE id = %s LIMIT 1", (int(menu_id),))
+            m_info = cur.fetchone()
             cur.callproc("sp_rezervasyon_yap", [k["id"], int(menu_id)])
             sonuc = cur.fetchone()
             while cur.nextset():
                 pass
         conn.commit()
-        onbellek_temizle()
+        if m_info:
+            menu_onbellek_sil(m_info["yemekhane_id"], m_info["tarih"], m_info["ogun_id"])
         return jsonify({"mesaj": "Rezervasyon olusturuldu.", "sonuc": sonuc or {}}), 201
     except Exception as e:
         conn.rollback()
@@ -357,12 +413,19 @@ def rezervasyon_iptal(rez_id):
     conn = yazma_baglantisi()
     try:
         with conn.cursor() as cur:
+            cur.execute(
+                "SELECT m.yemekhane_id, m.tarih, m.ogun_id FROM rezervasyonlar r "
+                "JOIN menuler m ON m.id = r.menu_id WHERE r.id = %s LIMIT 1",
+                (int(rez_id),),
+            )
+            m_info = cur.fetchone()
             cur.callproc("sp_rezervasyon_iptal", [k["id"], int(rez_id)])
             sonuc = cur.fetchone()
             while cur.nextset():
                 pass
         conn.commit()
-        onbellek_temizle()
+        if m_info:
+            menu_onbellek_sil(m_info["yemekhane_id"], m_info["tarih"], m_info["ogun_id"])
         return jsonify({"mesaj": "Rezervasyon iptal edildi.", "sonuc": sonuc or {}}), 200
     except Exception as e:
         conn.rollback()
@@ -435,7 +498,7 @@ def turnike_gecis():
             while cur.nextset():
                 pass
         conn.commit()
-        onbellek_temizle()
+        menu_onbellek_sil()
         return jsonify({"mesaj": "Turnike gecisi onaylandi.", "sonuc": sonuc or {}}), 200
     except Exception as e:
         conn.rollback()
@@ -466,8 +529,11 @@ def degerlendirme_kaydet():
                 "ON DUPLICATE KEY UPDATE puan = VALUES(puan), yorum = VALUES(yorum)",
                 (k["id"], int(g["menu_id"]), int(g["puan"]), (g.get("yorum") or "").strip()),
             )
+            cur.execute("SELECT yemekhane_id, tarih, ogun_id FROM menuler WHERE id = %s LIMIT 1", (int(g["menu_id"]),))
+            m_info = cur.fetchone()
         conn.commit()
-        onbellek_temizle()
+        if m_info:
+            menu_onbellek_sil(m_info["yemekhane_id"], m_info["tarih"], m_info["ogun_id"])
         return jsonify({"mesaj": "Degerlendirmeniz kaydedildi."}), 201
     except Exception as e:
         conn.rollback()
@@ -541,7 +607,7 @@ def yonetim_menu_olustur():
             for yid in yemek_idler:
                 cur.execute("INSERT INTO menu_yemekleri (menu_id, yemek_id) VALUES (%s, %s)", (mid, int(yid)))
         conn.commit()
-        onbellek_temizle()
+        menu_onbellek_sil(g["yemekhane_id"], g["tarih"].strip(), g["ogun_id"])
         return jsonify({"mesaj": "Yeni menu olusturuldu.", "menu_id": mid}), 201
     except Exception as e:
         conn.rollback()
