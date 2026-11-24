@@ -190,19 +190,18 @@
   </header>
 
   <nav id="sekmeNav">
-    <button class="active" data-sekme="giris">1. Giris / Profil</button>
-    <button data-sekme="gunun">2. Gunun Menusu</button>
-    <button data-sekme="haftalik">3. Haftalik Menu & Rezervasyon</button>
-    <button data-sekme="rezervasyonlarim">4. Rezervasyonlarim</button>
-    <button data-sekme="bakiye">5. Bakiye</button>
-    <button data-sekme="degerlendirme">6. Degerlendirme</button>
-    <button data-sekme="yonetim">7. Yonetim</button>
+    <button type="button" class="active" data-sekme="giris">1. Giris / Profil</button>
+    <button type="button" data-sekme="gunun">2. Gunun Menusu</button>
+    <button type="button" data-sekme="haftalik">3. Haftalik Menu &amp; Rezervasyon</button>
+    <button type="button" data-sekme="rezervasyonlarim">4. Rezervasyonlarim</button>
+    <button type="button" data-sekme="bakiye">5. Bakiye</button>
+    <button type="button" data-sekme="degerlendirme">6. Degerlendirme</button>
+    <button type="button" data-sekme="yonetim">7. Yonetim</button>
   </nav>
 
   <main>
     <div id="mesajKutu" class="msg"></div>
 
-    <!-- 1. GIRIS VE PROFIL (ALERJEN SECIMI) -->
     <section id="panel-giris" class="panel active">
       <div class="grid-2">
         <div class="card">
@@ -212,23 +211,22 @@
           <label style="margin-top:8px;">Sifre</label>
           <input type="password" id="girisSifre" placeholder="Sifreniz" />
           <div class="row" style="margin-top:12px;">
-            <button class="btn" onclick="girisYap()">Giris Yap</button>
-            <button class="btn-secondary" onclick="cikisYap()">Cikis Yap</button>
+            <button type="button" class="btn" id="btnGirisYap">Giris Yap</button>
+            <button type="button" class="btn-secondary" id="btnCikisYap">Cikis Yap</button>
           </div>
         </div>
 
         <div class="card">
-          <h2>Profil & Alerjen Tercihlerim</h2>
+          <h2>Profil &amp; Alerjen Tercihlerim</h2>
           <p style="font-size:0.88rem;color:var(--muted);margin-top:0;">
             Sectiginiz alerjenleri iceren yemekler menude uyari ile gosterilir.
           </p>
           <div id="profilAlerjenKutulari" class="alerjen-liste"></div>
-          <button class="btn" onclick="profilAlerjenKaydet()">Alerjenleri Kaydet</button>
+          <button type="button" class="btn" id="btnAlerjenKaydet">Alerjenleri Kaydet</button>
         </div>
       </div>
     </section>
 
-    <!-- 2. GUNUN MENUSU -->
     <section id="panel-gunun" class="panel">
       <div class="card">
         <h2>Gunun Menusu</h2>
@@ -247,13 +245,12 @@
           </div>
         </div>
         <div class="row" style="margin-top:10px;">
-          <button class="btn" onclick="menuleriYukle('gunun')">Menuyu Getir</button>
+          <button type="button" class="btn" id="btnGununGetir">Menuyu Getir</button>
         </div>
       </div>
       <div id="gununMenuListe"></div>
     </section>
 
-    <!-- 3. HAFTALIK MENU VE REZERVASYON -->
     <section id="panel-haftalik" class="panel">
       <div class="card">
         <h2>Haftalik Menu ve Rezervasyon</h2>
@@ -272,17 +269,16 @@
           </div>
         </div>
         <div class="row" style="margin-top:10px;">
-          <button class="btn" onclick="haftalikYukle()">Listele</button>
+          <button type="button" class="btn" id="btnHaftalikGetir">Listele</button>
         </div>
       </div>
       <div id="haftalikMenuListe"></div>
     </section>
 
-    <!-- 4. REZERVASYONLARIM -->
     <section id="panel-rezervasyonlarim" class="panel">
       <div class="card">
         <h2>Rezervasyonlarim</h2>
-        <button class="btn" onclick="rezervasyonlarimiYukle()">Yenile</button>
+        <button type="button" class="btn" id="btnRezYenile">Yenile</button>
         <div class="table-wrap" style="margin-top:10px;">
           <table>
             <thead>
@@ -302,7 +298,6 @@
       </div>
     </section>
 
-    <!-- 5. BAKIYE -->
     <section id="panel-bakiye" class="panel">
       <div class="grid-2">
         <div class="card">
@@ -311,7 +306,7 @@
           <label>Yuklenecek Tutar (TL)</label>
           <input type="number" step="0.01" min="1" id="yukleTutar" placeholder="50.00" />
           <div class="row" style="margin-top:10px;">
-            <button class="btn" onclick="bakiyeYukle()">Bakiye Yukle</button>
+            <button type="button" class="btn" id="btnBakiyeYukle">Bakiye Yukle</button>
           </div>
         </div>
         <div class="card">
@@ -328,7 +323,6 @@
       </div>
     </section>
 
-    <!-- 6. DEGERLENDIRME -->
     <section id="panel-degerlendirme" class="panel">
       <div class="card">
         <h2>Menu Degerlendirme</h2>
@@ -345,18 +339,17 @@
         <label style="margin-top:8px;">Yorum</label>
         <textarea id="degYorum" rows="2" placeholder="Gorusunuz..."></textarea>
         <div class="row" style="margin-top:10px;">
-          <button class="btn" onclick="degerlendirmeGonder()">Kaydet</button>
+          <button type="button" class="btn" id="btnDegKaydet">Kaydet</button>
         </div>
       </div>
     </section>
 
-    <!-- 7. YONETIM -->
     <section id="panel-yonetim" class="panel">
       <div class="card">
         <h2>Doluluk ve Puan Raporu</h2>
         <div class="row">
           <input type="date" id="raporTarih" style="max-width:220px;" />
-          <button class="btn" onclick="raporGetir()">Raporu Getir</button>
+          <button type="button" class="btn" id="btnRaporGetir">Raporu Getir</button>
         </div>
         <div class="table-wrap" style="margin-top:10px;">
           <table>
@@ -416,14 +409,21 @@
     function kullaniciCubugunuGuncelle() {
       const el = document.getElementById("kullaniciCubugu");
       if (!aktifKullanici) {
-        el.innerHTML = '<span>Giris yapilmadi</span>';
+        el.innerHTML = "<span>Giris yapilmadi</span>";
         return;
       }
-      el.innerHTML = `
-        <span><strong>${aktifKullanici.ad} ${aktifKullanici.soyad}</strong> (${aktifKullanici.rol})</span>
-        <span>| Bakiye: <strong>${Number(aktifKullanici.bakiye || 0).toFixed(2)} TL</strong></span>
-        <button class="btn-secondary" onclick="cikisYap()">Cikis</button>
-      `;
+      el.innerHTML =
+        "<span><strong>" + aktifKullanici.ad + " " + aktifKullanici.soyad + "</strong> (" + aktifKullanici.rol + ")</span>" +
+        "<span>| Bakiye: <strong>" + Number(aktifKullanici.bakiye || 0).toFixed(2) + " TL</strong></span>" +
+        '<button type="button" class="btn-secondary" id="btnHeaderCikis">Cikis</button>';
+      const hc = document.getElementById("btnHeaderCikis");
+      if (hc) hc.addEventListener("click", cikisYap);
+    }
+
+    function alerjenSecimDegisti() {
+      seciliAlerjenIdler = Array.from(
+        document.querySelectorAll("#profilAlerjenKutulari input[type='checkbox']:checked")
+      ).map(cb => Number(cb.value));
     }
 
     function profilAlerjenRender() {
@@ -434,19 +434,16 @@
       }
       wrap.innerHTML = tanimVeri.alerjenler.map(a => {
         const checked = seciliAlerjenIdler.includes(Number(a.id)) ? "checked" : "";
-        return `
-          <label class="alerjen-kutu">
-            <input type="checkbox" value="${a.id}" ${checked} onchange="alerjenSecimDegisti()" />
-            <span>${a.ad}</span>
-          </label>
-        `;
+        return (
+          '<label class="alerjen-kutu">' +
+          '<input type="checkbox" value="' + a.id + '" ' + checked + " />" +
+          "<span>" + a.ad + "</span>" +
+          "</label>"
+        );
       }).join("");
-    }
-
-    function alerjenSecimDegisti() {
-      seciliAlerjenIdler = Array.from(
-        document.querySelectorAll("#profilAlerjenKutulari input[type='checkbox']:checked")
-      ).map(cb => Number(cb.value));
+      wrap.querySelectorAll("input[type='checkbox']").forEach(cb => {
+        cb.addEventListener("change", alerjenSecimDegisti);
+      });
     }
 
     async function profilAlerjenKaydet() {
@@ -514,89 +511,89 @@
       const res = await apiIstek("/tanimlar");
       tanimVeri = res;
       const yhOpts = '<option value="">Tum Yemekhaneler</option>' +
-        (res.yemekhaneler || []).map(y => `<option value="${y.id}">${y.ad}</option>`).join("");
+        (res.yemekhaneler || []).map(y => '<option value="' + y.id + '">' + y.ad + "</option>").join("");
       document.getElementById("gununYemekhane").innerHTML = yhOpts;
       document.getElementById("haftalikYemekhane").innerHTML = yhOpts;
 
       const ogOpts = '<option value="">Tum Ogunler</option>' +
-        (res.ogunler || []).map(o => `<option value="${o.id}">${o.ad}</option>`).join("");
+        (res.ogunler || []).map(o => '<option value="' + o.id + '">' + o.ad + "</option>").join("");
       document.getElementById("gununOgun").innerHTML = ogOpts;
 
       const alOpts = '<option value="">Yok</option>' +
-        (res.alerjenler || []).map(a => `<option value="${a.id}">${a.ad}</option>`).join("");
+        (res.alerjenler || []).map(a => '<option value="' + a.id + '">' + a.ad + "</option>").join("");
       document.getElementById("haftalikHaricAlerjen").innerHTML = alOpts;
 
       profilAlerjenRender();
     }
 
     function porsiyonSecimHtml(menu) {
-      const rol = aktifKullanici?.rol || "ogrenci";
+      const rol = aktifKullanici && aktifKullanici.rol ? aktifKullanici.rol : "ogrenci";
       const tamFiyat = rol === "personel" ? menu.personel_fiyati : menu.ogrenci_fiyati;
       const yarimFiyat = rol === "personel" ? menu.personel_yarim_fiyat : menu.ogrenci_yarim_fiyat;
 
       if (!menu.yarim_porsiyon_uygun) {
-        return `
-          <div class="row" style="margin-top:8px;">
-            <span class="etiket">Tam Porsiyon: ${Number(tamFiyat).toFixed(2)} TL</span>
-            <span class="etiket">Kahvaltida yarim porsiyon yok</span>
-          </div>
-        `;
+        return (
+          '<div class="row" style="margin-top:8px;">' +
+          '<span class="etiket">Tam Porsiyon: ' + Number(tamFiyat).toFixed(2) + " TL</span>" +
+          '<span class="etiket">Kahvaltida yarim porsiyon yok</span>' +
+          "</div>"
+        );
       }
-      return `
-        <div class="row" style="margin-top:8px;">
-          <label style="margin:0;max-width:260px;">
-            Porsiyon Secimi
-            <select id="porsiyon-sec-${menu.menu_id}">
-              <option value="tam">Tam Porsiyon (${Number(tamFiyat).toFixed(2)} TL)</option>
-              <option value="yarim">Yarim Porsiyon - %60 (${Number(yarimFiyat).toFixed(2)} TL)</option>
-            </select>
-          </label>
-        </div>
-      `;
+      return (
+        '<div class="row" style="margin-top:8px;">' +
+        '<label style="margin:0;max-width:260px;">Porsiyon Secimi' +
+        '<select id="porsiyon-sec-' + menu.menu_id + '">' +
+        '<option value="tam">Tam Porsiyon (' + Number(tamFiyat).toFixed(2) + " TL)</option>" +
+        '<option value="yarim">Yarim Porsiyon - %60 (' + Number(yarimFiyat).toFixed(2) + " TL)</option>" +
+        "</select></label></div>"
+      );
     }
 
     function menuKartHtml(m) {
       const yemeklerHtml = (m.yemekler || []).map(y => {
         const uyariVar = Boolean(y.alerjen_uyarisi);
-        return `
-          <div class="yemek-satir ${uyariVar ? "uyarili" : ""}">
-            <div>
-              <strong>${y.ad}</strong>
-              <span class="etiket">${y.kalori} kcal</span>
-              ${y.vejetaryen ? '<span class="etiket">Vejetaryen</span>' : ""}
-              ${y.alerjenler ? `<span class="etiket">Alerjen: ${y.alerjenler}</span>` : ""}
-            </div>
-            ${uyariVar ? '<span class="etiket uyari">ALERJEN UYARISI (Profilinizle eslesiyor)</span>' : ""}
-          </div>
-        `;
+        return (
+          '<div class="yemek-satir ' + (uyariVar ? "uyarili" : "") + '">' +
+          "<div><strong>" + y.ad + "</strong> " +
+          '<span class="etiket">' + y.kalori + " kcal</span>" +
+          (y.vejetaryen ? '<span class="etiket">Vejetaryen</span>' : "") +
+          (y.alerjenler ? '<span class="etiket">Alerjen: ' + y.alerjenler + "</span>" : "") +
+          "</div>" +
+          (uyariVar ? '<span class="etiket uyari">ALERJEN UYARISI (Profilinizle eslesiyor)</span>' : "") +
+          "</div>"
+        );
       }).join("");
 
       const genelUyari = m.kullanici_alerjen_uyarisi
-        ? `<div class="alerjen-uyari">Uyari: Bu menudeki su yemekler sectiginiz alerjenleri iceriyor: ${(m.uyari_yemekleri || []).join(", ")}</div>`
+        ? '<div class="alerjen-uyari">Uyari: Bu menudeki su yemekler sectiginiz alerjenleri iceriyor: ' + (m.uyari_yemekleri || []).join(", ") + "</div>"
         : "";
 
-      return `
-        <div class="card">
-          <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;">
-            <div>
-              <strong>${m.tarih}</strong> — <span>${m.yemekhane}</span> (${m.ogun})
-              <span class="etiket">Menu #${m.menu_id}</span>
-            </div>
-            <div>
-              <span class="etiket">Bos Yer: ${m.bos_yer}/${m.kapasite}</span>
-              <span class="etiket">Toplam: ${m.toplam_kalori} kcal</span>
-              <span class="etiket">Ogr: ${Number(m.ogrenci_fiyati).toFixed(2)} TL</span>
-              <span class="etiket">Per: ${Number(m.personel_fiyati).toFixed(2)} TL</span>
-            </div>
-          </div>
-          ${genelUyari}
-          <div style="margin-top:8px;">${yemeklerHtml || "<em>Yemek kaydi yok.</em>"}</div>
-          ${porsiyonSecimHtml(m)}
-          <div class="row" style="margin-top:10px;">
-            <button class="btn" onclick="rezervasyonYap(${m.menu_id})">Rezervasyon Yap</button>
-          </div>
-        </div>
-      `;
+      return (
+        '<div class="card">' +
+        '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;">' +
+        "<div><strong>" + m.tarih + "</strong> — <span>" + m.yemekhane + "</span> (" + m.ogun + ") " +
+        '<span class="etiket">Menu #' + m.menu_id + "</span></div>" +
+        "<div>" +
+        '<span class="etiket">Bos Yer: ' + m.bos_yer + "/" + m.kapasite + "</span>" +
+        '<span class="etiket">Toplam: ' + m.toplam_kalori + " kcal</span>" +
+        '<span class="etiket">Ogr: ' + Number(m.ogrenci_fiyati).toFixed(2) + " TL</span>" +
+        '<span class="etiket">Per: ' + Number(m.personel_fiyati).toFixed(2) + " TL</span>" +
+        "</div></div>" +
+        genelUyari +
+        '<div style="margin-top:8px;">' + (yemeklerHtml || "<em>Yemek kaydi yok.</em>") + "</div>" +
+        porsiyonSecimHtml(m) +
+        '<div class="row" style="margin-top:10px;">' +
+        '<button type="button" class="btn btn-rez" data-menu-id="' + m.menu_id + '">Rezervasyon Yap</button>' +
+        "</div></div>"
+      );
+    }
+
+    function kartButonlariniBagla(kapsayiciId) {
+      const kapsayici = document.getElementById(kapsayiciId);
+      if (!kapsayici) return;
+      kapsayici.querySelectorAll(".btn-rez").forEach(btn => {
+        btn.addEventListener("click", () => rezervasyonYap(Number(btn.dataset.menuId)));
+      });
     }
 
     async function menuleriYukle(hedef) {
@@ -612,10 +609,12 @@
       try {
         const res = await apiIstek("/menuler?" + params.toString());
         const liste = res.menuler || [];
-        const targetEl = document.getElementById(hedef === "gunun" ? "gununMenuListe" : "haftalikMenuListe");
+        const targetId = hedef === "gunun" ? "gununMenuListe" : "haftalikMenuListe";
+        const targetEl = document.getElementById(targetId);
         targetEl.innerHTML = liste.length
           ? liste.map(menuKartHtml).join("")
           : '<div class="card">Secili kriterlere uygun menu bulunamadi.</div>';
+        kartButonlariniBagla(targetId);
       } catch (e) {
         mesajGoster(e.message, "err");
       }
@@ -634,9 +633,11 @@
         if (baslangic) {
           liste = liste.filter(m => m.tarih >= baslangic);
         }
-        document.getElementById("haftalikMenuListe").innerHTML = liste.length
+        const targetEl = document.getElementById("haftalikMenuListe");
+        targetEl.innerHTML = liste.length
           ? liste.map(menuKartHtml).join("")
           : '<div class="card">Menu bulunamadi.</div>';
+        kartButonlariniBagla("haftalikMenuListe");
       } catch (e) {
         mesajGoster(e.message, "err");
       }
@@ -662,21 +663,24 @@
       try {
         const res = await apiIstek("/rezervasyonlarim");
         const rows = res.rezervasyonlar || [];
-        document.getElementById("rezTabloGovde").innerHTML = rows.map(r => `
-          <tr>
-            <td>${r.tarih}</td>
-            <td>${r.yemekhane}</td>
-            <td>${r.ogun}</td>
-            <td><span class="etiket">${(r.porsiyon || "tam").toUpperCase()}</span></td>
-            <td>${Number(r.ucret).toFixed(2)} TL</td>
-            <td>${r.durum}</td>
-            <td>
-              ${r.durum === "aktif"
-                ? `<button class="btn-danger" onclick="rezervasyonIptal(${r.rezervasyon_id})">Iptal</button>`
-                : "-"}
-            </td>
-          </tr>
-        `).join("") || '<tr><td colspan="7">Kayit bulunamadi.</td></tr>';
+        const tbody = document.getElementById("rezTabloGovde");
+        tbody.innerHTML = rows.map(r => (
+          "<tr>" +
+          "<td>" + r.tarih + "</td>" +
+          "<td>" + r.yemekhane + "</td>" +
+          "<td>" + r.ogun + "</td>" +
+          '<td><span class="etiket">' + String(r.porsiyon || "tam").toUpperCase() + "</span></td>" +
+          "<td>" + Number(r.ucret).toFixed(2) + " TL</td>" +
+          "<td>" + r.durum + "</td>" +
+          "<td>" +
+          (r.durum === "aktif"
+            ? '<button type="button" class="btn-danger btn-iptal" data-rez-id="' + r.rezervasyon_id + '">Iptal</button>'
+            : "-") +
+          "</td></tr>"
+        )).join("") || '<tr><td colspan="7">Kayit bulunamadi.</td></tr>';
+        tbody.querySelectorAll(".btn-iptal").forEach(btn => {
+          btn.addEventListener("click", () => rezervasyonIptal(Number(btn.dataset.rezId)));
+        });
       } catch (e) {
         mesajGoster(e.message, "err");
       }
@@ -684,7 +688,7 @@
 
     async function rezervasyonIptal(rezId) {
       try {
-        const res = await apiIstek(`/rezervasyonlar/${rezId}/iptal`, { method: "POST" });
+        const res = await apiIstek("/rezervasyonlar/" + rezId + "/iptal", { method: "POST" });
         mesajGoster(res.mesaj || "Iptal edildi.", "ok");
         await oturumKontrol();
         rezervasyonlarimiYukle();
@@ -706,16 +710,81 @@
           mesajGoster("Bakiye yuklendi.", "ok");
         }
         const det = await apiIstek("/bakiye");
-        document.getElementById("guncelBakiyeDeger").textContent = `${Number(det.bakiye || 0).toFixed(2)} TL`;
+        document.getElementById("guncelBakiyeDeger").textContent = Number(det.bakiye || 0).toFixed(2) + " TL";
         if (aktifKullanici) {
           aktifKullanici.bakiye = det.bakiye;
           kullaniciCubugunuGuncelle();
         }
-        document.getElementById("bakiyeHareketGovde").innerHTML = (det.hareketler || []).map(h => `
-          <tr>
-            <td>${h.olusturma}</td>
-            <td>${h.tur}</td>
-            <td>${Number(h.tutar).toFixed(2)} TL</td>
-            <td>${h.aciklama || ""}</td>
-          </tr>
-        `).join("") || '<tr><td colspan="4">Hareket yok.</td>
+        document.getElementById("bakiyeHareketGovde").innerHTML = (det.hareketler || []).map(h => (
+          "<tr>" +
+          "<td>" + h.olusturma + "</td>" +
+          "<td>" + h.tur + "</td>" +
+          "<td>" + Number(h.tutar).toFixed(2) + " TL</td>" +
+          "<td>" + (h.aciklama || "") + "</td>" +
+          "</tr>"
+        )).join("") || '<tr><td colspan="4">Hareket yok.</td></tr>';
+      } catch (e) {
+        mesajGoster(e.message, "err");
+      }
+    }
+
+    async function degerlendirmeGonder() {
+      const menu_id = parseInt(document.getElementById("degMenuId").value, 10);
+      const puan = parseInt(document.getElementById("degPuan").value, 10);
+      const yorum = document.getElementById("degYorum").value;
+      try {
+        const res = await apiIstek("/degerlendirmeler", {
+          method: "POST",
+          body: JSON.stringify({ menu_id, puan, yorum })
+        });
+        mesajGoster(res.mesaj || "Degerlendirme kaydedildi.", "ok");
+      } catch (e) {
+        mesajGoster(e.message, "err");
+      }
+    }
+
+    async function raporGetir() {
+      const tarih = document.getElementById("raporTarih").value;
+      const q = tarih ? "?tarih=" + encodeURIComponent(tarih) : "";
+      try {
+        const res = await apiIstek("/yonetim/rapor" + q);
+        document.getElementById("raporGovde").innerHTML = (res.rapor || []).map(r => (
+          "<tr>" +
+          "<td>" + r.tarih + "</td>" +
+          "<td>" + r.yemekhane + "</td>" +
+          "<td>" + r.ogun + "</td>" +
+          "<td>%" + r.doluluk_yuzde + " (" + r.rezerve + "/" + r.kapasite + ")</td>" +
+          "<td>" + (r.ortalama_puan ?? "-") + "</td>" +
+          "</tr>"
+        )).join("") || '<tr><td colspan="5">Kayit yok.</td></tr>';
+      } catch (e) {
+        mesajGoster(e.message, "err");
+      }
+    }
+
+    document.getElementById("btnGirisYap").addEventListener("click", girisYap);
+    document.getElementById("btnCikisYap").addEventListener("click", cikisYap);
+    document.getElementById("btnAlerjenKaydet").addEventListener("click", profilAlerjenKaydet);
+    document.getElementById("btnGununGetir").addEventListener("click", () => menuleriYukle("gunun"));
+    document.getElementById("btnHaftalikGetir").addEventListener("click", haftalikYukle);
+    document.getElementById("btnRezYenile").addEventListener("click", rezervasyonlarimiYukle);
+    document.getElementById("btnBakiyeYukle").addEventListener("click", bakiyeYukle);
+    document.getElementById("btnDegKaydet").addEventListener("click", degerlendirmeGonder);
+    document.getElementById("btnRaporGetir").addEventListener("click", raporGetir);
+
+    (async function baslat() {
+      const bugun = new Date().toISOString().slice(0, 10);
+      document.getElementById("gununTarih").value = bugun;
+      document.getElementById("haftalikTarih").value = bugun;
+      document.getElementById("raporTarih").value = bugun;
+      try {
+        await tanimlariYukle();
+        await oturumKontrol();
+        await menuleriYukle("gunun");
+      } catch (e) {
+        mesajGoster(e.message, "err");
+      }
+    })();
+  </script>
+</body>
+</html>
